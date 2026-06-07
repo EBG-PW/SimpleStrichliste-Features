@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title data-translate="FoodOrders.PageTitle"></title>
+    <%- html_content.manifest %>
+    <script>
+      const lang = <%- JSON.stringify(language) %>;
+      const features = <%- JSON.stringify(features) %>;
+    </script>
+    <script src="<%= domain %>/libjs/i18next.js?<%= curentUnixTime %>"></script>
+    <script src="<%= domain %>/libjs/tailwind.js?<%= curentUnixTime %>"></script>
+  </head>
+
+  <body class="bg-gray-100 font-sans">
+    <%- html_content.navbar %>
+
+    <main class="container mx-auto p-4 md:p-6">
+      <header class="mb-6">
+        <h1 class="text-2xl font-bold text-gray-800 md:text-3xl" data-translate="FoodOrders.PageTitle"></h1>
+        <p class="mt-1 text-sm text-gray-600" data-translate="FoodOrders.UserSubtitle"></p>
+      </header>
+
+      <div id="message-box-container" class="fixed bottom-20 right-5 z-50 w-full max-w-xs lg:bottom-5">
+        <div id="message-box" class="hidden mt-4 rounded-lg p-4 shadow-lg"></div>
+      </div>
+
+      <div class="space-y-6">
+        <section id="order-selector" class="hidden rounded-xl bg-white p-5 shadow">
+          <div class="mb-4 flex items-center justify-between">
+            <h2 class="text-lg font-bold text-gray-800" data-translate="FoodOrders.ActiveOrders"></h2>
+            <button type="button" onclick="loadOrders()" class="rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50" data-translate="FoodOrders.Refresh"></button>
+          </div>
+          <div id="orders-list" class="space-y-3"></div>
+        </section>
+
+        <section id="order-content" class="hidden rounded-xl bg-white p-5 shadow">
+          <div id="order-panel" class="text-sm text-gray-500" data-translate="FoodOrders.SelectActiveOrder"></div>
+        </section>
+      </div>
+    </main>
+
+    <button id="mobile-checkout-button" type="button" onclick="openCheckoutModal()" class="fixed bottom-5 right-5 z-40 hidden rounded-full bg-blue-600 px-4 py-3 text-sm font-semibold text-white shadow-lg lg:hidden">
+      <span data-translate="FoodOrders.OpenCheckout"></span>
+      <span id="mobile-checkout-count" class="ml-2 rounded-full bg-white px-2 py-0.5 text-xs text-blue-700">0</span>
+    </button>
+
+    <div id="checkout-modal" class="fixed inset-0 z-50 hidden items-end bg-black bg-opacity-60 p-3 lg:hidden">
+      <div class="max-h-[82vh] w-full overflow-auto rounded-lg bg-white p-4 shadow-2xl">
+        <div class="mb-3 flex items-center justify-between">
+          <h2 class="text-lg font-bold text-gray-900" data-translate="FoodOrders.Checkout"></h2>
+          <button type="button" onclick="closeCheckoutModal()" class="rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-700" data-translate="FoodOrders.Close"></button>
+        </div>
+        <div id="checkout-modal-content"></div>
+      </div>
+    </div>
+
+    <div id="item-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black bg-opacity-60 p-4">
+      <form id="order-item-form" class="w-full max-w-md rounded-lg bg-white p-5 shadow-2xl">
+        <div class="mb-4 flex items-start justify-between gap-3">
+          <div class="min-w-0">
+            <h2 id="item-modal-title" class="break-words text-lg font-bold text-gray-900"></h2>
+            <p id="item-modal-price" class="mt-1 text-sm font-semibold text-gray-700"></p>
+          </div>
+          <button type="button" onclick="closeItemModal()" class="rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-700" data-translate="FoodOrders.Close"></button>
+        </div>
+        <div id="manual-fields" class="hidden grid grid-cols-1 gap-3 md:grid-cols-2">
+          <div>
+            <label for="manual-name" class="block text-sm font-medium text-gray-700" data-translate="FoodOrders.Item"></label>
+            <input id="manual-name" class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2" />
+          </div>
+          <div>
+            <label for="manual-price" class="block text-sm font-medium text-gray-700" data-translate="FoodOrders.Price"></label>
+            <input id="manual-price" type="number" min="0" step="0.01" class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2" />
+          </div>
+        </div>
+        <div class="mt-4 grid grid-cols-1 gap-3">
+          <div>
+            <label for="quantity" class="block text-sm font-medium text-gray-700" data-translate="FoodOrders.Quantity"></label>
+            <input id="quantity" type="number" min="1" max="99" value="1" required class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2" />
+          </div>
+          <div>
+            <label for="note" class="block text-sm font-medium text-gray-700" data-translate="FoodOrders.Note"></label>
+            <textarea id="note" maxlength="500" rows="3" class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2"></textarea>
+            <div class="mt-1 text-right text-xs text-gray-500"><span id="note-count">0</span>/500</div>
+          </div>
+          <button class="w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700" data-translate="FoodOrders.AddToOrder"></button>
+        </div>
+      </form>
+    </div>
+
+    <script src="<%= domain %>/appjs/permission.js?<%= curentUnixTime %>" defer></script>
+    <script src="<%= domain %>/appjs/translate.js?<%= curentUnixTime %>"></script>
+    <script>
+      let orders = [];
+      let selectedOrderUuid = null;
+      let selectedOrder = null;
+      let selectedMenuItem = null;
+      let itemModalManual = false;
+      let currentOwnItems = [];
+
+      const money = new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" });
+      const messageBox = document.getElementById("message-box");
+
+      function showMessage(text, type = "success") {
+        messageBox.textContent = text;
+        messageBox.className = `mt-4 rounded-lg p-4 shadow-lg ${type === "success" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`;
+        messageBox.classList.remove("hidden");
+        setTimeout(() => messageBox.classList.add("hidden"), 4000);
+      }
+
+      async function requestJson(url, options = {}) {
+        const response = await apiFetch(url, options);
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          const message = typeof data.error === "string" && data.error.startsWith("FoodOrders.") ? t(data.error) : t("FoodOrders.RequestFailed");
+          throw new Error(message);
+        }
+        return data;
+      }
+
+      async function loadOrders() {
+        const data = await requestJson("/api/v1/foodorders/orders/open");
+        orders = data.orders;
+        if (selectedOrderUuid && !orders.some((order) => order.uuid === selectedOrderUuid)) {
+          selectedOrderUuid = null;
+          selectedOrder = null;
+        }
+        renderOrderList();
+        if (selectedOrderUuid) {
+          await selectOrder(selectedOrderUuid, false);
+        } else {
+          renderOrderPanel();
+        }
+      }
+
+      function renderOrderList() {
+        document.getElementById("order-selector").classList.toggle("hidden", Boolean(selectedOrder));
+        const list = document.getElementById("orders-list");
+        list.innerHTML = orders.map((order) => `
+          <button type="button" onclick="selectOrder('${order.uuid}')" class="w-full rounded-lg border border-gray-200 p-3 text-left hover:bg-gray-50">
+            <div class="font-semibold text-gray-800">${order.title}</div>
+            <div class="mt-1 flex flex-wrap items-center gap-2 text-sm text-gray-600">
+              <span>${order.vendor?.name || t("FoodOrders.NoVendor")}</span>
+              <span class="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-700">${t(`FoodOrders.Statuses.${order.status}`)}</span>
+            </div>
+            <div class="mt-2 text-xs text-gray-500">${order.orderDeadline ? t("FoodOrders.DeadlinePrefix", { date: new Date(order.orderDeadline).toLocaleString("de-DE") }) : t("FoodOrders.NoDeadline")}</div>
+          </button>
+        `).join("") || `<p class="text-sm text-gray-500">${t("FoodOrders.NoOpenOrders")}</p>`;
+      }
+
+      async function selectOrder(uuid, rerenderList = true) {
+        selectedOrderUuid = uuid;
+        const data = await requestJson(`/api/v1/foodorders/orders/${uuid}`);
+        selectedOrder = data.order;
+        selectedOrder.menu = data.menu;
+        selectedMenuItem = null;
+        if (rerenderList) renderOrderList();
+        document.getElementById("order-selector").classList.add("hidden");
+        renderOrderPanel();
+      }
+
+      function renderOrderPanel() {
+        const panel = document.getElementById("order-panel");
+        if (!selectedOrder) {
+          document.getElementById("order-content").classList.add("hidden");
+          panel.innerHTML = `<p>${orders.length === 0 ? t("FoodOrders.NoOpenOrders") : t("FoodOrders.SelectActiveOrder")}</p>`;
+          updateMobileCheckout([]);
+          return;
+        }
+
+        document.getElementById("order-content").classList.remove("hidden");
+        const hasMenu = selectedOrder.vendor?.hasMenu;
+        const canEditOrder = selectedOrder.status === "open";
+        currentOwnItems = selectedOrder.items.filter((item) => item.user.uuid === localStorage.getItem("uuid"));
+        panel.innerHTML = `
+          <div class="mb-5 flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+            <div>
+              <h2 class="text-xl font-bold text-gray-900">${selectedOrder.title}</h2>
+              <p class="text-sm text-gray-600">${selectedOrder.vendor?.name || t("FoodOrders.NoVendor")}${selectedOrder.orderDeadline ? ` - ${new Date(selectedOrder.orderDeadline).toLocaleString("de-DE")}` : ""}</p>
+            </div>
+            <span class="rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">${t(`FoodOrders.Statuses.${selectedOrder.status}`)}</span>
+          </div>
+
+          <div class="grid grid-cols-1 gap-5 lg:grid-cols-[3fr_1fr]">
+            <div class="min-w-0 ${hasMenu ? "lg:max-h-[calc(100vh-230px)] lg:overflow-y-auto lg:pr-2" : ""}">
+              ${hasMenu ? renderMenu(selectedOrder.menu, canEditOrder) : renderManualInfo(canEditOrder)}
+            </div>
+            <aside class="min-w-0 lg:sticky lg:top-6 lg:self-start">
+              <div class="hidden lg:block">${renderCheckout(currentOwnItems)}</div>
+            </aside>
+          </div>
+        `;
+
+        updateMobileCheckout(currentOwnItems);
+      }
+
+      function renderMenu(menu, canEditOrder) {
+        const groupedMenu = menu.reduce((groups, item) => {
+          const categoryName = item.categoryName || t("FoodOrders.Admin.NoCategory");
+          if (!groups[categoryName]) groups[categoryName] = [];
+          groups[categoryName].push(item);
+          return groups;
+        }, {});
+
+        return `
+          <div>
+            <h3 class="mb-3 font-bold text-gray-800">${t("FoodOrders.Menu")}</h3>
+            ${Object.entries(groupedMenu).map(([categoryName, items]) => `
+              <section class="mb-4">
+                <h4 class="mb-2 text-sm font-semibold uppercase text-gray-500">${categoryName}</h4>
+                <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
+                  ${items.map((item) => `
+                    <button type="button" ${canEditOrder ? `onclick="openItemModal('${item.uuid}')"` : "disabled"} class="menu-item rounded-lg border border-gray-200 p-3 text-left hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60" data-menu-item="${item.uuid}">
+                      <div class="break-words font-semibold text-gray-800">${item.name}</div>
+                      <div class="mt-1 whitespace-pre-wrap break-words text-xs text-gray-500">${item.description || ""}</div>
+                      <div class="mt-2 font-semibold text-gray-900">${money.format(item.price)}</div>
+                    </button>
+                  `).join("")}
+                </div>
+              </section>
+            `).join("") || `<p class="text-sm text-gray-500">${t("FoodOrders.NoMenuItems")}</p>`}
+          </div>
+        `;
+      }
+
+      function renderManualInfo(canEditOrder) {
+        return `
+          <div>
+            <h3 class="mb-3 font-bold text-gray-800">${t("FoodOrders.ManualEntry")}</h3>
+            <p class="mb-4 text-sm text-gray-600">${t("FoodOrders.ManualEntryDescription")}</p>
+            ${canEditOrder ? `<button type="button" onclick="openManualItemModal()" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">${t("FoodOrders.AddManualItem")}</button>` : ""}
+          </div>
+        `;
+      }
+
+      function renderCheckout(items) {
+        const total = items.reduce((sum, item) => sum + Number(item.total || 0), 0);
+        return `
+          <div class="rounded-lg border border-gray-200 bg-gray-50 p-4">
+            <div class="mb-3 flex items-center justify-between">
+              <h3 class="font-bold text-gray-800">${t("FoodOrders.Checkout")}</h3>
+              <span class="text-sm font-semibold text-gray-700">${money.format(total)}</span>
+            </div>
+            <div class="space-y-2">
+              ${items.map((item) => `
+                <div class="rounded-lg border border-gray-200 bg-white p-3">
+                  <div class="flex items-start justify-between gap-3">
+                    <div class="min-w-0">
+                      <div class="break-words font-semibold text-gray-800">${item.itemName}</div>
+                      <div class="text-xs text-gray-500">${t("FoodOrders.QuantityValue", { quantity: item.quantity })}</div>
+                      ${item.note ? `<div class="mt-1 whitespace-pre-wrap break-words text-xs text-gray-500">${item.note}</div>` : ""}
+                      <div class="mt-1 text-xs text-gray-500">${t("FoodOrders.Status")}: ${t(`FoodOrders.Statuses.${item.status}`)}${item.chargedAt ? ` - ${t("FoodOrders.Charged")}` : ""}</div>
+                    </div>
+                    <div class="flex shrink-0 flex-col items-end gap-2">
+                      <div class="font-semibold text-gray-800">${money.format(item.total)}</div>
+                      ${selectedOrder?.status === "open" && item.status === "requested" && !item.chargedAt ? `<button type="button" onclick="deleteOrderItem(${item.id})" class="rounded border border-red-200 px-2 py-1 text-xs font-semibold text-red-700 hover:bg-red-50">${t("FoodOrders.Remove")}</button>` : ""}
+                    </div>
+                  </div>
+                </div>
+              `).join("") || `<p class="text-sm text-gray-500">${t("FoodOrders.OwnOrderEmpty")}</p>`}
+            </div>
+          </div>
+        `;
+      }
+
+      function updateMobileCheckout(items) {
+        const button = document.getElementById("mobile-checkout-button");
+        const count = items.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+        document.getElementById("mobile-checkout-count").textContent = count;
+        document.getElementById("checkout-modal-content").innerHTML = renderCheckout(items);
+        button.classList.toggle("hidden", !selectedOrder);
+      }
+
+      function openCheckoutModal() {
+        document.getElementById("checkout-modal-content").innerHTML = renderCheckout(currentOwnItems);
+        document.getElementById("checkout-modal").classList.remove("hidden");
+        document.getElementById("checkout-modal").classList.add("flex");
+      }
+
+      function closeCheckoutModal() {
+        document.getElementById("checkout-modal").classList.add("hidden");
+        document.getElementById("checkout-modal").classList.remove("flex");
+      }
+
+      function resetItemModal() {
+        document.getElementById("order-item-form").reset();
+        document.getElementById("quantity").value = 1;
+        document.getElementById("note").value = "";
+        updateNoteCount();
+      }
+
+      function openItemModal(uuid) {
+        selectedMenuItem = uuid;
+        itemModalManual = false;
+        const item = selectedOrder.menu.find((entry) => entry.uuid === uuid);
+        resetItemModal();
+        document.getElementById("manual-fields").classList.add("hidden");
+        document.getElementById("manual-name").required = false;
+        document.getElementById("manual-price").required = false;
+        document.getElementById("item-modal-title").textContent = item?.name || t("FoodOrders.ItemDetails");
+        document.getElementById("item-modal-price").textContent = item ? money.format(item.price) : "";
+        document.getElementById("item-modal").classList.remove("hidden");
+        document.getElementById("item-modal").classList.add("flex");
+      }
+
+      function openManualItemModal() {
+        selectedMenuItem = null;
+        itemModalManual = true;
+        resetItemModal();
+        document.getElementById("manual-fields").classList.remove("hidden");
+        document.getElementById("manual-name").required = true;
+        document.getElementById("manual-price").required = true;
+        document.getElementById("item-modal-title").textContent = t("FoodOrders.ManualEntry");
+        document.getElementById("item-modal-price").textContent = "";
+        document.getElementById("item-modal").classList.remove("hidden");
+        document.getElementById("item-modal").classList.add("flex");
+      }
+
+      function closeItemModal() {
+        document.getElementById("item-modal").classList.add("hidden");
+        document.getElementById("item-modal").classList.remove("flex");
+      }
+
+      async function submitOrderItem(event) {
+        event.preventDefault();
+        const body = {
+          quantity: Number(document.getElementById("quantity").value),
+          note: document.getElementById("note").value,
+        };
+
+        if (!itemModalManual) {
+          body.itemUuid = selectedMenuItem;
+        } else {
+          body.itemName = document.getElementById("manual-name").value;
+          body.price = Number(document.getElementById("manual-price").value);
+        }
+
+        await requestJson(`/api/v1/foodorders/orders/${selectedOrder.uuid}/items`, {
+          method: "POST",
+          body: JSON.stringify(body),
+        });
+        closeItemModal();
+        showMessage(t("FoodOrders.ItemAdded"));
+        await selectOrder(selectedOrder.uuid, false);
+      }
+
+      async function deleteOrderItem(id) {
+        try {
+          await requestJson(`/api/v1/foodorders/orders/${selectedOrder.uuid}/items/${id}`, { method: "DELETE" });
+          showMessage(t("FoodOrders.ItemRemoved"));
+          await selectOrder(selectedOrder.uuid, false);
+        } catch (error) {
+          showMessage(error.message, "error");
+        }
+      }
+
+      function updateNoteCount() {
+        document.getElementById("note-count").textContent = document.getElementById("note").value.length;
+      }
+
+      document.addEventListener("DOMContentLoaded", () => {
+        document.title = t("FoodOrders.PageTitle");
+        document.getElementById("note").addEventListener("input", updateNoteCount);
+        document.getElementById("order-item-form").addEventListener("submit", (event) => submitOrderItem(event).catch((error) => showMessage(error.message, "error")));
+        loadOrders().catch((error) => showMessage(error.message, "error"));
+      });
+    </script>
+  </body>
+</html>

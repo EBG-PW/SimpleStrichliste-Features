@@ -1,0 +1,55 @@
+{
+  "name": "foodorders",
+  "version": "0.0.1",
+  "enabledByDefault": false,
+  "navbar": {
+    "insert": true,
+    "href": "/foodorders",
+    "translationKey": "Navbar.FoodOrders",
+    "order": 60
+  },
+  "adminCard": {
+    "href": "/admin/foodorders",
+    "translationKeyBase": "Admin.FeatureCards.foodorders"
+  },
+  "settings": {
+    "translationKeyBase": "AdminSettings.Features.foodorders"
+  },
+  "localsMap": {
+    "/foodorders": [
+      "FoodOrders",
+      "Error",
+      "Page",
+      "Navbar"
+    ],
+    "/admin/foodorders": [
+      "FoodOrders",
+      "Admin",
+      "Error",
+      "Page",
+      "Navbar"
+    ],
+    "/admin/foodorders/vendors": [
+      "FoodOrders",
+      "Admin",
+      "Error",
+      "Page",
+      "Navbar"
+    ],
+    "/admin/foodorders/vendors/:uuid/items": [
+      "FoodOrders",
+      "Admin",
+      "Error",
+      "Page",
+      "Navbar"
+    ]
+  },
+  "db": {
+    "migrations": [
+      "migrations/1780704000-CreateFoodOrders.sql"
+    ],
+    "seeds": [
+      "seeds/foodorders.sql"
+    ]
+  }
+}

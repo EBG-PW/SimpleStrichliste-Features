@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title data-translate="FoodOrders.Admin.Items"></title>
+    <%- html_content.manifest %>
+    <script>
+      const lang = <%- JSON.stringify(language) %>;
+      const features = <%- JSON.stringify(features) %>;
+      const vendorUuid = "<%= params.uuid %>";
+    </script>
+    <script src="<%= domain %>/libjs/i18next.js?<%= curentUnixTime %>"></script>
+    <script src="<%= domain %>/libjs/tailwind.js?<%= curentUnixTime %>"></script>
+  </head>
+
+  <body class="bg-gray-100 font-sans">
+    <%- html_content.navbar %>
+
+    <main class="container mx-auto p-4 md:p-6">
+      <header class="mb-5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div>
+          <h1 id="page-heading" class="text-2xl font-bold text-gray-900" data-translate="FoodOrders.Admin.Items"></h1>
+          <p class="text-sm text-gray-600" data-translate="FoodOrders.Admin.ItemsSubtitle"></p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <a href="/admin/foodorders/vendors" class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50" data-translate="FoodOrders.Admin.BackToVendors"></a>
+          <button type="button" onclick="openImportModal()" class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50" data-translate="FoodOrders.Admin.ImportMenu"></button>
+          <button type="button" onclick="openCategoryModal()" class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50" data-translate="FoodOrders.Admin.AddCategory"></button>
+          <button type="button" onclick="openItemModal()" class="rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700" data-translate="FoodOrders.Admin.AddItem"></button>
+        </div>
+      </header>
+
+      <div id="message-box-container" class="fixed bottom-5 right-5 z-50 w-full max-w-xs">
+        <div id="message-box" class="hidden mt-4 rounded-lg p-4 shadow-lg"></div>
+      </div>
+
+      <section class="rounded-lg bg-white shadow">
+        <div class="flex flex-col gap-3 border-b border-gray-200 p-4 lg:flex-row lg:items-end lg:justify-between">
+          <div class="grid grid-cols-1 gap-3 md:grid-cols-[260px_220px]">
+            <input id="search-input" class="rounded-lg border border-gray-300 px-3 py-2 text-sm" data-translate-placeholder="FoodOrders.Admin.SearchItems" />
+            <select id="category-filter" class="rounded-lg border border-gray-300 px-3 py-2 text-sm"></select>
+          </div>
+          <button type="button" onclick="loadItems(1)" class="rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50" data-translate="FoodOrders.Refresh"></button>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="min-w-full text-left text-sm">
+            <thead class="border-b bg-gray-50 text-xs uppercase text-gray-500">
+              <tr>
+                <th class="px-4 py-3" data-translate="FoodOrders.Item"></th>
+                <th class="px-4 py-3" data-translate="FoodOrders.Admin.Category"></th>
+                <th class="px-4 py-3" data-translate="FoodOrders.Price"></th>
+                <th class="px-4 py-3" data-translate="FoodOrders.Admin.Description"></th>
+                <th class="px-4 py-3" data-translate="FoodOrders.Admin.IsActive"></th>
+                <th class="px-4 py-3 text-right" data-translate="FoodOrders.Admin.Actions"></th>
+              </tr>
+            </thead>
+            <tbody id="items-body"></tbody>
+          </table>
+        </div>
+        <div id="pagination" class="flex items-center justify-between border-t border-gray-200 p-4 text-sm"></div>
+      </section>
+    </main>
+
+    <div id="import-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black bg-opacity-60 p-4">
+      <form id="import-form" class="w-full max-w-lg rounded-lg bg-white p-5 shadow-2xl">
+        <h2 class="mb-4 text-lg font-bold text-gray-900" data-translate="FoodOrders.Admin.ImportMenu"></h2>
+        <div class="space-y-4">
+          <div>
+            <label for="import-parser" class="block text-sm font-medium text-gray-700" data-translate="FoodOrders.Admin.ImportParser"></label>
+            <select id="import-parser" required class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2"></select>
+          </div>
+          <div>
+            <label for="import-file" class="block text-sm font-medium text-gray-700" data-translate="FoodOrders.Admin.ImportFile"></label>
+            <input id="import-file" name="menuHtml" type="file" required accept=".html,.htm,text/html" class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2" />
+          </div>
+        </div>
+        <p class="mt-2 text-sm text-gray-500" data-translate="FoodOrders.Admin.ImportHelp"></p>
+        <div class="mt-5 flex justify-end gap-3">
+          <button type="button" onclick="closeImportModal()" class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700" data-translate="FoodOrders.Admin.Cancel"></button>
+          <button id="import-submit" type="submit" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white" data-translate="FoodOrders.Admin.Import"></button>
+        </div>
+      </form>
+    </div>
+
+    <div id="category-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black bg-opacity-60 p-4">
+      <form id="category-form" class="w-full max-w-md rounded-lg bg-white p-5 shadow-2xl">
+        <h2 class="mb-4 text-lg font-bold text-gray-900" data-translate="FoodOrders.Admin.AddCategory"></h2>
+        <div class="space-y-4">
+          <div>
+            <label for="category-name" class="block text-sm font-medium text-gray-700" data-translate="FoodOrders.Admin.Name"></label>
+            <input id="category-name" required class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2" />
+          </div>
+          <div>
+            <label for="category-sort" class="block text-sm font-medium text-gray-700" data-translate="FoodOrders.Admin.SortOrder"></label>
+            <input id="category-sort" type="number" min="0" value="0" class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2" />
+          </div>
+        </div>
+        <div class="mt-5 flex justify-end gap-3">
+          <button type="button" onclick="closeCategoryModal()" class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700" data-translate="FoodOrders.Admin.Cancel"></button>
+          <button type="submit" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white" data-translate="FoodOrders.Admin.Save"></button>
+        </div>
+      </form>
+    </div>
+
+    <div id="item-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black bg-opacity-60 p-4">
+      <form id="item-form" class="w-full max-w-lg rounded-lg bg-white p-5 shadow-2xl">
+        <h2 class="mb-4 text-lg font-bold text-gray-900" data-translate="FoodOrders.Admin.ItemModalTitle"></h2>
+        <div class="space-y-4">
+          <div>
+            <label for="item-name" class="block text-sm font-medium text-gray-700" data-translate="FoodOrders.Item"></label>
+            <input id="item-name" required class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2" />
+          </div>
+          <div>
+            <label for="item-category" class="block text-sm font-medium text-gray-700" data-translate="FoodOrders.Admin.Category"></label>
+            <select id="item-category" class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2"></select>
+          </div>
+          <div>
+            <label for="item-price" class="block text-sm font-medium text-gray-700" data-translate="FoodOrders.Price"></label>
+            <input id="item-price" type="number" min="0" step="0.01" required class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2" />
+          </div>
+          <div>
+            <label for="item-description" class="block text-sm font-medium text-gray-700" data-translate="FoodOrders.Admin.Description"></label>
+            <textarea id="item-description" maxlength="500" class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2"></textarea>
+            <div class="mt-1 text-right text-xs text-gray-500"><span id="item-description-count">0</span>/500</div>
+          </div>
+          <label class="flex items-center justify-between rounded-lg border border-gray-200 p-3">
+            <span class="text-sm font-medium text-gray-700" data-translate="FoodOrders.Admin.IsActive"></span>
+            <input id="item-is-active" type="checkbox" class="h-5 w-5" checked />
+          </label>
+        </div>
+        <div class="mt-5 flex justify-end gap-3">
+          <button type="button" onclick="closeItemModal()" class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700" data-translate="FoodOrders.Admin.Cancel"></button>
+          <button type="submit" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white" data-translate="FoodOrders.Admin.Save"></button>
+        </div>
+      </form>
+    </div>
+
+    <script src="<%= domain %>/appjs/permission.js?<%= curentUnixTime %>" defer></script>
+    <script src="<%= domain %>/appjs/translate.js?<%= curentUnixTime %>"></script>
+    <script>
+      const money = new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" });
+      let categories = [];
+      let items = [];
+      let importParsers = [];
+      let currentPage = 1;
+      const messageBox = document.getElementById("message-box");
+
+      function showMessage(text, type = "success") {
+        messageBox.textContent = text;
+        messageBox.className = `mt-4 rounded-lg p-4 shadow-lg ${type === "success" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`;
+        messageBox.classList.remove("hidden");
+        setTimeout(() => messageBox.classList.add("hidden"), 4000);
+      }
+
+      async function requestJson(url, options = {}) {
+        const response = await apiFetch(url, options);
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          const message = typeof data.error === "string" && data.error.startsWith("FoodOrders.") ? t(data.error) : t("FoodOrders.RequestFailed");
+          throw new Error(message);
+        }
+        return data;
+      }
+
+      async function loadVendor() {
+        const data = await requestJson(`/api/v1/foodorders/admin/vendors/${vendorUuid}`);
+        document.getElementById("page-heading").textContent = `${t("FoodOrders.Admin.Items")} - ${data.vendor.name}`;
+      }
+
+      async function loadCategories() {
+        const data = await requestJson(`/api/v1/foodorders/admin/vendors/${vendorUuid}/categories`);
+        categories = data.categories;
+        document.getElementById("category-filter").innerHTML = [`<option value="">${t("FoodOrders.Admin.AllCategories")}</option>`, ...categories.map((category) => `<option value="${category.uuid}">${category.name}</option>`)].join("");
+        document.getElementById("item-category").innerHTML = [`<option value="">${t("FoodOrders.Admin.NoCategory")}</option>`, ...categories.map((category) => `<option value="${category.uuid}">${category.name}</option>`)].join("");
+      }
+
+      async function loadImportParsers() {
+        const data = await requestJson("/api/v1/foodorders/admin/import-parsers");
+        importParsers = data.parsers || [];
+        document.getElementById("import-parser").innerHTML = importParsers.map((parser) => `<option value="${parser.id}">${t(parser.translationKey)}</option>`).join("");
+      }
+
+      async function loadItems(page = currentPage) {
+        currentPage = page;
+        const query = new URLSearchParams({
+          page,
+          limit: 15,
+          query: document.getElementById("search-input").value,
+          categoryUuid: document.getElementById("category-filter").value,
+        });
+        const data = await requestJson(`/api/v1/foodorders/admin/vendors/${vendorUuid}/items?${query}`);
+        items = data.items;
+        renderItems(items);
+        renderPagination(data.pagination);
+      }
+
+      function renderItems(items) {
+        document.getElementById("items-body").innerHTML = items.map((item) => `
+          <tr class="border-b">
+            <td class="px-4 py-3 font-semibold text-gray-900">${item.name}</td>
+            <td class="px-4 py-3">${item.categoryName || t("FoodOrders.Admin.NoCategory")}</td>
+            <td class="px-4 py-3">${money.format(item.price)}</td>
+            <td class="max-w-lg whitespace-pre-wrap break-words px-4 py-3 text-gray-600">${item.description || ""}</td>
+            <td class="px-4 py-3">${item.isActive ? t("FoodOrders.Admin.Active") : t("FoodOrders.Admin.Inactive")}</td>
+            <td class="px-4 py-3 text-right">
+              <button type="button" onclick="openItemModal('${item.uuid}')" class="rounded border border-gray-300 px-3 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-50">${t("FoodOrders.Admin.Edit")}</button>
+            </td>
+          </tr>
+        `).join("") || `<tr><td colspan="6" class="px-4 py-8 text-center text-gray-500">${t("FoodOrders.Admin.NoItems")}</td></tr>`;
+      }
+
+      function renderPagination(pagination) {
+        document.getElementById("pagination").innerHTML = `
+          <span>${pagination.total} ${t("FoodOrders.Admin.Rows")}</span>
+          <div class="flex gap-2">
+            <button ${pagination.page <= 1 ? "disabled" : ""} onclick="loadItems(${pagination.page - 1})" class="rounded border border-gray-300 px-3 py-1 disabled:opacity-50">${t("FoodOrders.Admin.Previous")}</button>
+            <span class="px-2 py-1">${pagination.page} / ${pagination.totalPages}</span>
+            <button ${pagination.page >= pagination.totalPages ? "disabled" : ""} onclick="loadItems(${pagination.page + 1})" class="rounded border border-gray-300 px-3 py-1 disabled:opacity-50">${t("FoodOrders.Admin.Next")}</button>
+          </div>
+        `;
+      }
+
+      function openCategoryModal() {
+        document.getElementById("category-form").reset();
+        document.getElementById("category-modal").classList.remove("hidden");
+        document.getElementById("category-modal").classList.add("flex");
+      }
+
+      function closeCategoryModal() {
+        document.getElementById("category-modal").classList.add("hidden");
+        document.getElementById("category-modal").classList.remove("flex");
+      }
+
+      function openImportModal() {
+        document.getElementById("import-form").reset();
+        document.getElementById("import-modal").classList.remove("hidden");
+        document.getElementById("import-modal").classList.add("flex");
+      }
+
+      function closeImportModal() {
+        document.getElementById("import-modal").classList.add("hidden");
+        document.getElementById("import-modal").classList.remove("flex");
+      }
+
+      function openItemModal(uuid = null) {
+        const item = items.find((entry) => entry.uuid === uuid);
+        document.getElementById("item-form").reset();
+        document.getElementById("item-form").dataset.itemUuid = item?.uuid || "";
+        document.getElementById("item-name").value = item?.name || "";
+        document.getElementById("item-category").value = item?.categoryUuid || "";
+        document.getElementById("item-price").value = item?.price ?? "";
+        document.getElementById("item-description").value = item?.description || "";
+        document.getElementById("item-is-active").checked = item?.isActive ?? true;
+        updateDescriptionCount();
+        document.getElementById("item-modal").classList.remove("hidden");
+        document.getElementById("item-modal").classList.add("flex");
+      }
+
+      function closeItemModal() {
+        document.getElementById("item-modal").classList.add("hidden");
+        document.getElementById("item-modal").classList.remove("flex");
+      }
+
+      async function saveCategory(event) {
+        event.preventDefault();
+        await requestJson(`/api/v1/foodorders/admin/vendors/${vendorUuid}/categories`, {
+          method: "POST",
+          body: JSON.stringify({
+            name: document.getElementById("category-name").value,
+            sortOrder: Number(document.getElementById("category-sort").value || 0),
+            isActive: true,
+          }),
+        });
+        closeCategoryModal();
+        showMessage(t("FoodOrders.Admin.CategorySaved"));
+        await loadCategories();
+        await loadItems(1);
+      }
+
+      async function importMenu(event) {
+        event.preventDefault();
+        const button = document.getElementById("import-submit");
+        button.disabled = true;
+        button.classList.add("opacity-60");
+        try {
+          const file = document.getElementById("import-file").files[0];
+          const body = new FormData();
+          body.append("parser", document.getElementById("import-parser").value);
+          body.append("menuHtml", file);
+          const result = await requestJson(`/api/v1/foodorders/admin/vendors/${vendorUuid}/import`, {
+            method: "POST",
+            body,
+          });
+          closeImportModal();
+          showMessage(t("FoodOrders.Admin.ImportedMenu", { count: result.itemCount }));
+          await loadCategories();
+          await loadItems(1);
+        } catch (error) {
+          showMessage(error.message, "error");
+        } finally {
+          button.disabled = false;
+          button.classList.remove("opacity-60");
+        }
+      }
+
+      async function saveItem(event) {
+        event.preventDefault();
+        const itemUuid = document.getElementById("item-form").dataset.itemUuid;
+        await requestJson(itemUuid ? `/api/v1/foodorders/admin/items/${itemUuid}` : `/api/v1/foodorders/admin/vendors/${vendorUuid}/items`, {
+          method: itemUuid ? "PUT" : "POST",
+          body: JSON.stringify({
+            name: document.getElementById("item-name").value,
+            categoryUuid: document.getElementById("item-category").value,
+            price: Number(document.getElementById("item-price").value),
+            description: document.getElementById("item-description").value,
+            isActive: document.getElementById("item-is-active").checked,
+          }),
+        });
+        closeItemModal();
+        showMessage(t("FoodOrders.Admin.ItemSaved"));
+        await loadItems(itemUuid ? currentPage : 1);
+      }
+
+      function updateDescriptionCount() {
+        document.getElementById("item-description-count").textContent = document.getElementById("item-description").value.length;
+      }
+
+      document.addEventListener("DOMContentLoaded", async () => {
+        document.title = t("FoodOrders.Admin.Items");
+        document.getElementById("search-input").addEventListener("input", () => loadItems(1).catch((error) => showMessage(error.message, "error")));
+        document.getElementById("category-filter").addEventListener("change", () => loadItems(1).catch((error) => showMessage(error.message, "error")));
+        document.getElementById("item-description").addEventListener("input", updateDescriptionCount);
+        document.getElementById("import-form").addEventListener("submit", importMenu);
+        document.getElementById("category-form").addEventListener("submit", (event) => saveCategory(event).catch((error) => showMessage(error.message, "error")));
+        document.getElementById("item-form").addEventListener("submit", (event) => saveItem(event).catch((error) => showMessage(error.message, "error")));
+        await loadVendor();
+        await loadCategories();
+        await loadImportParsers();
+        await loadItems(1);
+      });
+    </script>
+  </body>
+</html>
