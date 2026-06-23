@@ -12,7 +12,7 @@ const router = new express.Router();
 
 const PluginName = 'FoodOrders';
 const PluginRequirements = [];
-const PluginVersion = '0.0.9';
+const PluginVersion = '0.0.2';
 
 const ORDER_STATUSES = ['open', 'closed', 'ordered', 'arrived', 'completed', 'cancelled'];
 const ORDER_ITEM_STATUSES = ['requested', 'ordered', 'completed', 'missing', 'cancelled'];
@@ -220,6 +220,7 @@ router.put('/admin/order-items/:id/status', verifyRequest('web.admin.foodorders.
     const body = await orderItemStatusSchema.validateAsync(req.body);
     const result = foodorders.updateOrderItemStatus(params.id, body.status, req.user.user_data.id);
     if (!result) return errorResponse(res, 'FoodOrders.Errors.OrderItemNotFound');
+    if (result.error) return errorResponse(res, result.error, 400);
     res.json({ id: params.id, status: body.status, charged: result.charged });
 });
 

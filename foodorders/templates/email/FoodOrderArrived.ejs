@@ -23,6 +23,6 @@
             <% }); %>
         </tbody>
     </table>
-    <p><a href="<%= domain %>/foodorders"><%= t('emails.FoodOrderArrived.open') %></a></p>
+    <p><a href="<%= domain %>/foodorders?order=<%= encodeURIComponent(orderUuid) %>"><%= t('emails.FoodOrderArrived.open') %></a></p>
 </body>
 </html>

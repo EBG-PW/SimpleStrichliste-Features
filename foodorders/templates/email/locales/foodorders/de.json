@@ -6,7 +6,7 @@
       "body": "Die Bestellung \"{{orderTitle}}\" bei {{vendorName}} ist jetzt geöffnet.",
       "deadline": "Bestellschluss: {{date}}",
       "open": "Bestellung öffnen",
-      "text": "Hallo {{name}},\n\nDie Bestellung \"{{orderTitle}}\" bei {{vendorName}} ist jetzt geöffnet.\n\n{{domain}}/foodorders"
+      "text": "Hallo {{name}},\n\nDie Bestellung \"{{orderTitle}}\" bei {{vendorName}} ist jetzt geöffnet.\n\n{{domain}}/foodorders?order={{orderUuid}}"
     },
     "FoodOrderArrived": {
       "subject": "Essensbestellung angekommen: {{orderTitle}}",
@@ -24,7 +24,7 @@
         "cancelled": "Abgebrochen"
       },
       "open": "Bestellung öffnen",
-      "text": "Hallo {{name}},\n\nDie Bestellung \"{{orderTitle}}\" bei {{vendorName}} ist angekommen.\n\n{{domain}}/foodorders"
+      "text": "Hallo {{name}},\n\nDie Bestellung \"{{orderTitle}}\" bei {{vendorName}} ist angekommen.\n\n{{domain}}/foodorders?order={{orderUuid}}"
     }
   }
 }

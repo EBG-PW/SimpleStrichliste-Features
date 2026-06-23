@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title data-translate="FoodOrders.Admin.OrderDetails"></title>
+    <%- html_content.manifest %>
+    <script>
+      const lang = <%- JSON.stringify(language) %>;
+      const features = <%- JSON.stringify(features) %>;
+      const orderUuid = <%- JSON.stringify(params.uuid) %>;
+    </script>
+    <script src="<%= domain %>/libjs/i18next.js?<%= curentUnixTime %>"></script>
+    <script src="<%= domain %>/libjs/tailwind.js?<%= curentUnixTime %>"></script>
+  </head>
+
+  <body class="bg-gray-100 font-sans">
+    <%- html_content.navbar %>
+
+    <main class="container mx-auto p-4 md:p-6">
+      <header class="mb-5 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+        <div class="flex items-start gap-4">
+          <a href="/admin/foodorders" class="mt-1 text-gray-500 hover:text-gray-800" data-translate-title="FoodOrders.Admin.BackToOrders">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+          </a>
+          <div>
+            <h1 id="order-title" class="text-2xl font-bold text-gray-900" data-translate="FoodOrders.Admin.OrderDetails"></h1>
+            <p id="order-subtitle" class="mt-1 text-sm text-gray-600"></p>
+          </div>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <span id="order-status" class="rounded-full bg-gray-200 px-3 py-1 text-sm font-semibold text-gray-700"></span>
+          <div id="order-actions" class="flex flex-wrap gap-2"></div>
+        </div>
+      </header>
+
+      <section class="overflow-hidden rounded-lg bg-white shadow">
+        <div class="overflow-x-auto">
+          <table class="min-w-full text-left text-sm">
+            <thead class="border-b bg-gray-50 text-xs uppercase text-gray-500">
+              <tr>
+                <th class="px-3 py-3" data-translate="FoodOrders.Admin.Person"></th>
+                <th class="px-3 py-3" data-translate="FoodOrders.Item"></th>
+                <th class="px-3 py-3" data-translate="FoodOrders.Quantity"></th>
+                <th class="px-3 py-3" data-translate="FoodOrders.Price"></th>
+                <th class="px-3 py-3" data-translate="FoodOrders.Note"></th>
+                <th class="px-3 py-3" data-translate="FoodOrders.Status"></th>
+              </tr>
+            </thead>
+            <tbody id="order-items"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <script src="<%= domain %>/appjs/permission.js?<%= curentUnixTime %>" defer></script>
+    <script src="<%= domain %>/appjs/translate.js?<%= curentUnixTime %>"></script>
+    <script>
+      const money = new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" });
+      let currentOrder = null;
+
+      async function requestJson(url, options = {}) {
+        const response = await apiFetch(url, options);
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          const message = typeof data.error === "string" && data.error.startsWith("FoodOrders.") ? t(data.error) : t("FoodOrders.RequestFailed");
+          throw new Error(message);
+        }
+        return data;
+      }
+
+      function renderOrderActions(order) {
+        const nextActions = {
+          open: [{ status: "closed", key: "CloseOrder", className: "bg-blue-600 hover:bg-blue-700" }],
+          closed: [{ status: "ordered", key: "MarkOrdered", className: "bg-blue-600 hover:bg-blue-700" }],
+          ordered: [{ status: "arrived", key: "MarkArrived", className: "bg-green-600 hover:bg-green-700" }],
+          arrived: [{ status: "completed", key: "MarkCompleted", className: "bg-green-600 hover:bg-green-700" }],
+          completed: [],
+          cancelled: [],
+        };
+        const actions = [...(nextActions[order.status] || [])];
+        if (order.status !== "cancelled" && order.status !== "completed") {
+          actions.push({ status: "cancelled", key: "MarkCancelled", className: "bg-red-600 hover:bg-red-700" });
+        }
+        return actions.map((action) => `
+          <button type="button" onclick="updateOrderStatus('${action.status}')" class="rounded-lg px-3 py-2 text-sm font-semibold text-white ${action.className}">
+            ${t(`FoodOrders.Admin.${action.key}`)}
+          </button>
+        `).join("");
+      }
+
+      function renderOrderItemActions(item) {
+        if (item.chargedAt) return "";
+        const transitions = {
+          requested: [
+            { status: "ordered", className: "bg-blue-600 hover:bg-blue-700" },
+            { status: "missing", className: "bg-orange-600 hover:bg-orange-700" },
+            { status: "cancelled", className: "bg-red-600 hover:bg-red-700" },
+          ],
+          ordered: [
+            { status: "completed", className: "bg-green-600 hover:bg-green-700" },
+            { status: "missing", className: "bg-orange-600 hover:bg-orange-700" },
+            { status: "cancelled", className: "bg-red-600 hover:bg-red-700" },
+          ],
+          completed: [],
+          missing: [],
+          cancelled: [],
+        };
+        return (transitions[item.status] || []).map((action) => `
+          <button type="button" onclick="updateOrderItemStatus(${item.id}, '${action.status}')" class="rounded px-2 py-1 text-xs font-semibold text-white ${action.className}">
+            ${t(`FoodOrders.Statuses.${action.status}`)}
+          </button>
+        `).join("");
+      }
+
+      function renderOrder(order) {
+        currentOrder = order;
+        document.title = `${t("FoodOrders.Admin.OrderDetails")} - ${order.title}`;
+        document.getElementById("order-title").textContent = order.title;
+        document.getElementById("order-subtitle").textContent =
+          `${order.vendor?.name || t("FoodOrders.NoVendor")} - ${money.format(order.total)}`;
+        document.getElementById("order-status").textContent = t(`FoodOrders.Statuses.${order.status}`);
+        document.getElementById("order-actions").innerHTML = renderOrderActions(order);
+        document.getElementById("order-items").innerHTML = order.items.map((item) => `
+          <tr class="border-b">
+            <td class="px-3 py-3">${item.user.name}</td>
+            <td class="max-w-sm whitespace-pre-wrap break-words px-3 py-3">${item.itemName}</td>
+            <td class="px-3 py-3">${item.quantity}</td>
+            <td class="px-3 py-3">${money.format(item.total)}</td>
+            <td class="max-w-sm whitespace-pre-wrap break-words px-3 py-3">${item.note || ""}</td>
+            <td class="px-3 py-3">
+              <div class="mb-2 text-xs font-semibold text-gray-700">${t(`FoodOrders.Statuses.${item.status}`)}</div>
+              <div class="flex flex-wrap gap-1">${renderOrderItemActions(item)}</div>
+              ${item.chargedAt ? `<div class="mt-1 text-xs text-green-600">${t("FoodOrders.Charged")}</div>` : ""}
+            </td>
+          </tr>
+        `).join("") || `<tr><td colspan="6" class="px-3 py-8 text-center text-gray-500">${t("FoodOrders.Admin.NoOrderItems")}</td></tr>`;
+      }
+
+      async function loadOrder() {
+        const data = await requestJson(`/api/v1/foodorders/admin/orders/${orderUuid}`);
+        renderOrder(data.order);
+      }
+
+      async function updateOrderStatus(status) {
+        await requestJson(`/api/v1/foodorders/admin/orders/${orderUuid}/status`, {
+          method: "PUT",
+          body: JSON.stringify({ status }),
+        });
+        showMessage(t("FoodOrders.Admin.OrderStatusUpdated"));
+        await loadOrder();
+      }
+
+      async function updateOrderItemStatus(id, status) {
+        const data = await requestJson(`/api/v1/foodorders/admin/order-items/${id}/status`, {
+          method: "PUT",
+          body: JSON.stringify({ status }),
+        });
+        showMessage(data.charged ? t("FoodOrders.Admin.OrderItemCharged") : t("FoodOrders.Admin.OrderItemStatusUpdated"));
+        await loadOrder();
+      }
+
+      document.addEventListener("DOMContentLoaded", () => {
+        loadOrder().catch((error) => showMessage(error.message, "error"));
+      });
+    </script>
+  </body>
+</html>

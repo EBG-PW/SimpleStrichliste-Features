@@ -26,6 +26,13 @@
       "Page",
       "Navbar"
     ],
+    "/admin/foodorders/:uuid": [
+      "FoodOrders",
+      "Admin",
+      "Error",
+      "Page",
+      "Navbar"
+    ],
     "/admin/foodorders/vendors": [
       "FoodOrders",
       "Admin",

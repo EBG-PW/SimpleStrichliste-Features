@@ -35,7 +35,7 @@ module.exports = [
                         `${item.quantity}x ${item.name}: ${context.t(`emails.FoodOrderArrived.statuses.${item.status}`)}`
                     ),
                     '',
-                    `${context.domain}/foodorders`,
+                    `${context.domain}/foodorders?order=${encodeURIComponent(context.orderUuid)}`,
                 ].join('\n'),
             },
         },

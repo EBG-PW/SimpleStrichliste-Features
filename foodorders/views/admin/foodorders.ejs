@@ -80,48 +80,12 @@
       </form>
     </div>
 
-    <div id="detail-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black bg-opacity-60 p-4">
-      <div class="flex max-h-[90vh] w-full max-w-5xl flex-col rounded-lg bg-white shadow-2xl">
-        <div class="flex items-start justify-between border-b border-gray-200 p-5">
-          <div>
-            <h2 id="detail-title" class="text-xl font-bold text-gray-900"></h2>
-            <p id="detail-subtitle" class="text-sm text-gray-600"></p>
-          </div>
-          <button type="button" onclick="closeDetailModal()" class="rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-700" data-translate="FoodOrders.Admin.Close"></button>
-        </div>
-        <div class="overflow-auto p-5">
-          <div class="mb-4 flex flex-wrap items-center gap-3">
-            <label class="text-sm font-medium text-gray-700" data-translate="FoodOrders.Status"></label>
-            <span id="detail-order-status" class="rounded-full bg-gray-100 px-3 py-1 text-sm font-semibold text-gray-700"></span>
-            <div id="detail-order-actions" class="flex flex-wrap gap-2"></div>
-          </div>
-          <div class="overflow-x-auto">
-            <table class="min-w-full text-left text-sm">
-              <thead class="border-b bg-gray-50 text-xs uppercase text-gray-500">
-                <tr>
-                  <th class="px-3 py-2" data-translate="FoodOrders.Admin.Person"></th>
-                  <th class="px-3 py-2" data-translate="FoodOrders.Item"></th>
-                  <th class="px-3 py-2" data-translate="FoodOrders.Quantity"></th>
-                  <th class="px-3 py-2" data-translate="FoodOrders.Price"></th>
-                  <th class="px-3 py-2" data-translate="FoodOrders.Note"></th>
-                  <th class="px-3 py-2" data-translate="FoodOrders.Status"></th>
-                </tr>
-              </thead>
-              <tbody id="detail-items"></tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
-
     <script src="<%= domain %>/appjs/permission.js?<%= curentUnixTime %>" defer></script>
     <script src="<%= domain %>/appjs/translate.js?<%= curentUnixTime %>"></script>
     <script>
       const money = new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" });
       const orderStatuses = ["", "open", "closed", "ordered", "arrived", "completed", "cancelled"];
-      const itemStatuses = ["requested", "ordered", "completed", "missing", "cancelled"];
       let currentPage = 1;
-      let currentOrder = null;
 
       async function requestJson(url, options = {}) {
         const response = await apiFetch(url, options);
@@ -136,47 +100,6 @@
       function renderStatusOptions(selected, includeAll = false) {
         const statuses = includeAll ? orderStatuses : orderStatuses.filter(Boolean);
         return statuses.map((status) => `<option value="${status}" ${selected === status ? "selected" : ""}>${status ? t(`FoodOrders.Statuses.${status}`) : t("FoodOrders.Admin.AllStatuses")}</option>`).join("");
-      }
-
-      function renderOrderActions(order) {
-        const nextActions = {
-          open: [{ status: "closed", key: "CloseOrder", className: "bg-blue-600 hover:bg-blue-700" }],
-          closed: [{ status: "ordered", key: "MarkOrdered", className: "bg-blue-600 hover:bg-blue-700" }],
-          ordered: [{ status: "arrived", key: "MarkArrived", className: "bg-green-600 hover:bg-green-700" }],
-          arrived: [{ status: "completed", key: "MarkCompleted", className: "bg-green-600 hover:bg-green-700" }],
-          completed: [],
-          cancelled: [],
-        };
-        const actions = [...(nextActions[order.status] || [])];
-        if (order.status !== "cancelled") {
-          actions.push({ status: "cancelled", key: "MarkCancelled", className: "bg-red-600 hover:bg-red-700" });
-        }
-        return actions.map((action) => `
-          <button
-            type="button"
-            onclick="updateOrderStatus('${order.uuid}', '${action.status}')"
-            class="rounded-lg px-3 py-2 text-sm font-semibold text-white ${action.className}"
-          >${t(`FoodOrders.Admin.${action.key}`)}</button>
-        `).join("");
-      }
-
-      function renderOrderItemActions(item) {
-        const actionClasses = {
-          requested: "bg-gray-600 hover:bg-gray-700",
-          ordered: "bg-blue-600 hover:bg-blue-700",
-          completed: "bg-green-600 hover:bg-green-700",
-          missing: "bg-orange-600 hover:bg-orange-700",
-          cancelled: "bg-red-600 hover:bg-red-700",
-        };
-        return itemStatuses
-          .filter((status) => status !== item.status)
-          .map((status) => `
-            <button
-              type="button"
-              onclick="updateOrderItemStatus(${item.id}, '${status}')"
-              class="rounded px-2 py-1 text-xs font-semibold text-white ${actionClasses[status]}"
-            >${t(`FoodOrders.Statuses.${status}`)}</button>
-          `).join("");
       }
 
       async function loadVendorsForOrder() {
@@ -202,7 +125,7 @@
 
       function renderOrders(orders) {
         document.getElementById("orders-body").innerHTML = orders.map((order) => `
-          <tr onclick="openDetailModal('${order.uuid}')" class="cursor-pointer border-b hover:bg-gray-50">
+          <tr onclick="window.location.href='/admin/foodorders/${order.uuid}'" class="cursor-pointer border-b hover:bg-gray-50">
             <td class="px-4 py-3 font-semibold text-gray-900">${order.title}</td>
             <td class="px-4 py-3">${order.vendor?.name || t("FoodOrders.NoVendor")}</td>
             <td class="px-4 py-3">${t(`FoodOrders.Statuses.${order.status}`)}</td>
@@ -235,36 +158,6 @@
         document.getElementById("order-modal").classList.remove("flex");
       }
 
-      async function openDetailModal(uuid) {
-        const data = await requestJson(`/api/v1/foodorders/admin/orders/${uuid}`);
-        currentOrder = data.order;
-        document.getElementById("detail-title").textContent = currentOrder.title;
-        document.getElementById("detail-subtitle").textContent = `${currentOrder.vendor?.name || t("FoodOrders.NoVendor")} - ${money.format(currentOrder.total)}`;
-        document.getElementById("detail-order-status").textContent = t(`FoodOrders.Statuses.${currentOrder.status}`);
-        document.getElementById("detail-order-actions").innerHTML = renderOrderActions(currentOrder);
-        document.getElementById("detail-items").innerHTML = currentOrder.items.map((item) => `
-          <tr class="border-b">
-            <td class="px-3 py-2">${item.user.name}</td>
-            <td class="max-w-sm whitespace-pre-wrap break-words px-3 py-2">${item.itemName}</td>
-            <td class="px-3 py-2">${item.quantity}</td>
-            <td class="px-3 py-2">${money.format(item.total)}</td>
-            <td class="max-w-sm whitespace-pre-wrap break-words px-3 py-2">${item.note || ""}</td>
-            <td class="px-3 py-2">
-              <div class="mb-2 text-xs font-semibold text-gray-700">${t(`FoodOrders.Statuses.${item.status}`)}</div>
-              <div class="flex flex-wrap gap-1">${renderOrderItemActions(item)}</div>
-              ${item.chargedAt ? `<div class="mt-1 text-xs text-green-600">${t("FoodOrders.Charged")}</div>` : ""}
-            </td>
-          </tr>
-        `).join("") || `<tr><td colspan="6" class="px-3 py-6 text-center text-gray-500">${t("FoodOrders.Admin.NoOrderItems")}</td></tr>`;
-        document.getElementById("detail-modal").classList.remove("hidden");
-        document.getElementById("detail-modal").classList.add("flex");
-      }
-
-      function closeDetailModal() {
-        document.getElementById("detail-modal").classList.add("hidden");
-        document.getElementById("detail-modal").classList.remove("flex");
-      }
-
       async function saveOrder(event) {
         event.preventDefault();
         await requestJson("/api/v1/foodorders/admin/orders", {
@@ -279,20 +172,6 @@
         closeOrderModal();
         showMessage(t("FoodOrders.Admin.OrderStarted"));
         await loadOrders(1);
-      }
-
-      async function updateOrderStatus(uuid, status) {
-        await requestJson(`/api/v1/foodorders/admin/orders/${uuid}/status`, { method: "PUT", body: JSON.stringify({ status }) });
-        showMessage(t("FoodOrders.Admin.OrderStatusUpdated"));
-        if (currentOrder?.uuid === uuid) await openDetailModal(uuid);
-        await loadOrders();
-      }
-
-      async function updateOrderItemStatus(id, status) {
-        const data = await requestJson(`/api/v1/foodorders/admin/order-items/${id}/status`, { method: "PUT", body: JSON.stringify({ status }) });
-        showMessage(data.charged ? t("FoodOrders.Admin.OrderItemCharged") : t("FoodOrders.Admin.OrderItemStatusUpdated"));
-        if (currentOrder) await openDetailModal(currentOrder.uuid);
-        await loadOrders();
       }
 
       document.addEventListener("DOMContentLoaded", async () => {

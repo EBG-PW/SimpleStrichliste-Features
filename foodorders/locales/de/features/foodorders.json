@@ -89,6 +89,7 @@
       "ManageItems": "Artikel verwalten",
       "Items": "Artikel",
       "Orders": "Bestellungen",
+      "OrderDetails": "Bestelldetails",
       "SearchOrders": "Bestellungen suchen...",
       "SearchVendors": "Anbieter suchen...",
       "SearchItems": "Artikel suchen...",
@@ -160,6 +161,7 @@
       "InsufficientFunds": "Dein Guthaben reicht für diese Bestellung nicht aus.",
       "OrderItemLocked": "Diese Bestellposition kann nicht mehr geändert werden.",
       "InvalidStatusTransition": "Dieser Statuswechsel ist nicht erlaubt.",
+      "InvalidItemStatusTransition": "Dieser Artikelstatus kann nicht mehr geändert werden.",
       "ImportUnsupportedParser": "Dieser Parser wird aktuell nicht unterstützt.",
       "ImportNoHtml": "Bitte lade eine HTML-Datei hoch.",
       "ImportNoItems": "Es konnten keine Menüartikel auf dieser Seite gefunden werden."

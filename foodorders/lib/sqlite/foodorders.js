@@ -2,6 +2,15 @@ const crypto = require('node:crypto');
 const { db } = require('@lib/sqlite');
 
 const TRANSACTION_ITEM_UUID = '13620506-b9f8-44d7-a9ff-d1b58ddee93f';
+const ORDER_ITEM_STATUS_TRANSITIONS = Object.freeze({
+    requested: Object.freeze(['ordered', 'missing', 'cancelled']),
+    ordered: Object.freeze(['completed', 'missing', 'cancelled']),
+    completed: Object.freeze([]),
+    missing: Object.freeze([]),
+    cancelled: Object.freeze([]),
+});
+const canTransitionOrderItemStatus = (currentStatus, nextStatus, chargedAt = null) =>
+    !chargedAt && Boolean(ORDER_ITEM_STATUS_TRANSITIONS[currentStatus]?.includes(nextStatus));
 
 const toCents = (price) => Math.round(Number(price || 0) * 100);
 const fromCents = (price) => Number((price / 100).toFixed(2));
@@ -462,9 +471,14 @@ const updateOrderItemStatus = (id, status, adminId) => {
             WHERE foi.id = ?
         `).get(itemId);
         if (!item) return null;
+        if (item.charged_at) return { error: 'FoodOrders.Errors.OrderItemLocked' };
+
+        if (!canTransitionOrderItemStatus(item.status, nextStatus, item.charged_at)) {
+            return { error: 'FoodOrders.Errors.InvalidItemStatusTransition' };
+        }
 
         let charged = false;
-        if (nextStatus === 'completed' && !item.charged_at) {
+        if (nextStatus === 'completed') {
             const customItemText = `${item.order_title} - ${item.item_name}`.slice(0, 500);
             db.prepare('UPDATE users SET balance = balance - ? WHERE id = ?').run(item.price_at_order * item.quantity, item.user_id);
             db.prepare(`
@@ -480,7 +494,7 @@ const updateOrderItemStatus = (id, status, adminId) => {
             WHERE id = ?
         `).run(nextStatus, nextStatus, itemId);
 
-        return { charged };
+        return { charged, previousStatus: item.status, status: nextStatus };
     });
 
     return updateStatus(id, status, adminId);
@@ -564,6 +578,8 @@ const deleteUserOrderItem = (orderUuid, itemId, userId) => {
 };
 
 module.exports = {
+    ORDER_ITEM_STATUS_TRANSITIONS,
+    canTransitionOrderItemStatus,
     listVendors,
     createVendor,
     getVendor,

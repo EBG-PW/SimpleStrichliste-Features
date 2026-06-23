@@ -7,6 +7,6 @@
     <% if (orderDeadline) { %>
     <p><%= t('emails.FoodOrderCreated.deadline', { date: new Date(orderDeadline).toLocaleString(language) }) %></p>
     <% } %>
-    <p><a href="<%= domain %>/foodorders"><%= t('emails.FoodOrderCreated.open') %></a></p>
+    <p><a href="<%= domain %>/foodorders?order=<%= encodeURIComponent(orderUuid) %>"><%= t('emails.FoodOrderCreated.open') %></a></p>
 </body>
 </html>
