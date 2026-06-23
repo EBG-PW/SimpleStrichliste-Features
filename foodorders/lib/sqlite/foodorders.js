@@ -388,12 +388,68 @@ const getAdminOrder = (uuid) => {
 };
 
 const updateOrderStatus = (uuid, status) => {
+    const order = getOrderByUuid(uuid);
+    if (!order) return null;
+    const allowedTransitions = {
+        open: ['closed', 'cancelled'],
+        closed: ['ordered', 'cancelled'],
+        ordered: ['arrived', 'cancelled'],
+        arrived: ['completed', 'cancelled'],
+        completed: ['cancelled'],
+        cancelled: [],
+    };
+    if (!allowedTransitions[order.status]?.includes(status)) {
+        return { error: 'FoodOrders.Errors.InvalidStatusTransition' };
+    }
     const result = db.prepare(`
         UPDATE foodorder_orders
         SET status = ?, updated_at = datetime('now')
         WHERE uuid = ?
     `).run(status, uuid);
-    return result.changes > 0;
+    return result.changes > 0 ? { previousStatus: order.status, status } : null;
+};
+
+const getOrderParticipants = (uuid) => {
+    const rows = db.prepare(`
+    SELECT
+        u.id,
+        u.uuid,
+        u.name,
+        u.email,
+        u.username,
+        u.language,
+        foi.item_name,
+        foi.quantity,
+        foi.status
+    FROM users u
+    JOIN foodorder_order_items foi ON foi.user_id = u.id
+    JOIN foodorder_orders fo ON fo.id = foi.order_id
+    WHERE fo.uuid = ? AND u.state > 0
+    ORDER BY u.id, foi.id
+    `).all(uuid);
+
+    const participants = new Map();
+    rows.forEach((row) => {
+        if (!participants.has(row.id)) {
+            participants.set(row.id, {
+                id: row.id,
+                uuid: row.uuid,
+                name: row.name,
+                email: row.email,
+                username: row.username,
+                language: row.language,
+                items: [],
+            });
+        }
+        participants.get(row.id).items.push({
+            name: row.item_name,
+            quantity: row.quantity,
+            status: row.status,
+        });
+    });
+
+    return [...participants.values()]
+        .filter((participant) => participant.items.some((item) => item.status !== 'cancelled'));
 };
 
 const updateOrderItemStatus = (id, status, adminId) => {
@@ -446,10 +502,10 @@ const getMenu = (vendorUuid) => {
     `).all(vendorUuid).map(mapItem);
 };
 
-const listOpenOrders = () => ({ orders: getOrders("WHERE fo.status IN ('open', 'closed', 'ordered')") });
+const listOpenOrders = () => ({ orders: getOrders("WHERE fo.status IN ('open', 'closed', 'ordered', 'arrived')") });
 
 const getUserOrder = (uuid) => {
-    const orders = getOrders("WHERE fo.uuid = ? AND fo.status IN ('open', 'closed', 'ordered')", [uuid], true);
+    const orders = getOrders("WHERE fo.uuid = ? AND fo.status IN ('open', 'closed', 'ordered', 'arrived')", [uuid], true);
     if (orders.length === 0) return null;
     const order = orders[0];
     return { order, menu: order.vendor ? getMenu(order.vendor.uuid) : [] };
@@ -522,6 +578,7 @@ module.exports = {
     createOrder,
     getAdminOrder,
     updateOrderStatus,
+    getOrderParticipants,
     updateOrderItemStatus,
     listOpenOrders,
     getUserOrder,

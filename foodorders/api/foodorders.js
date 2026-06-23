@@ -4,16 +4,33 @@ const { verifyRequest } = require('@middleware/verifyRequest');
 const { limiter } = require('@middleware/limiter');
 const { parseMultipart } = require('@middleware/parseMultipartForm');
 const foodorders = require('@lib/sqlite/foodorders');
+const { getNotificationSubscribers } = require('@lib/sqlite/userNotifications');
 const { importMenuFromHtml, importParsers } = require('@lib/foodorder_importer');
+const { sendNotification } = require('@lib/notifications');
 
 const router = new express.Router();
 
 const PluginName = 'FoodOrders';
 const PluginRequirements = [];
-const PluginVersion = '0.0.3';
+const PluginVersion = '0.0.9';
 
-const ORDER_STATUSES = ['open', 'closed', 'ordered', 'completed', 'cancelled'];
+const ORDER_STATUSES = ['open', 'closed', 'ordered', 'arrived', 'completed', 'cancelled'];
 const ORDER_ITEM_STATUSES = ['requested', 'ordered', 'completed', 'missing', 'cancelled'];
+const FOOD_ORDER_CREATED = 'FoodOrderCreated';
+const FOOD_ORDER_ARRIVED = 'FoodOrderArrived';
+
+const queueOrderNotification = async (recipients, type, order) => {
+    await Promise.all(recipients.map((recipient) => {
+        const message = JSON.stringify({
+            orderUuid: order.uuid,
+            orderTitle: order.title,
+            vendorName: order.vendor?.name || '',
+            orderDeadline: order.orderDeadline,
+            items: recipient.items || [],
+        });
+        return sendNotification(recipient.id, 0, type, message, recipient);
+    }));
+};
 
 const paginationSchema = Joi.object({
     page: Joi.number().integer().min(1).default(1),
@@ -168,6 +185,9 @@ router.post('/admin/orders', verifyRequest('web.admin.foodorders.write'), limite
     const body = await orderSchema.validateAsync(req.body);
     const uuid = foodorders.createOrder(body, req.user.user_data.id);
     if (!uuid) return errorResponse(res, 'FoodOrders.Errors.VendorNotFound');
+    const order = foodorders.getAdminOrder(uuid);
+    const recipients = getNotificationSubscribers('foodorders-new-order', 'email', true);
+    await queueOrderNotification(recipients, FOOD_ORDER_CREATED, order);
     res.status(201).json({ uuid });
 });
 
@@ -181,7 +201,17 @@ router.get('/admin/orders/:uuid', verifyRequest('web.admin.foodorders.read'), li
 router.put('/admin/orders/:uuid/status', verifyRequest('web.admin.foodorders.write'), limiter(2), async (req, res) => {
     const params = await uuidSchema.validateAsync(req.params);
     const body = await orderStatusSchema.validateAsync(req.body);
-    if (!foodorders.updateOrderStatus(params.uuid, body.status)) return errorResponse(res, 'FoodOrders.Errors.OrderNotFound');
+    const result = foodorders.updateOrderStatus(params.uuid, body.status);
+    if (!result) return errorResponse(res, 'FoodOrders.Errors.OrderNotFound');
+    if (result.error) return errorResponse(res, result.error, 400);
+    if (body.status === 'arrived') {
+        const order = foodorders.getAdminOrder(params.uuid);
+        await queueOrderNotification(
+            foodorders.getOrderParticipants(params.uuid),
+            FOOD_ORDER_ARRIVED,
+            order
+        );
+    }
     res.json({ uuid: params.uuid, status: body.status });
 });
 

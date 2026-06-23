@@ -1,0 +1,30 @@
+{
+  "emails": {
+    "FoodOrderCreated": {
+      "subject": "Neue Essensbestellung: {{orderTitle}}",
+      "heading": "Neue Essensbestellung",
+      "body": "Die Bestellung \"{{orderTitle}}\" bei {{vendorName}} ist jetzt geöffnet.",
+      "deadline": "Bestellschluss: {{date}}",
+      "open": "Bestellung öffnen",
+      "text": "Hallo {{name}},\n\nDie Bestellung \"{{orderTitle}}\" bei {{vendorName}} ist jetzt geöffnet.\n\n{{domain}}/foodorders"
+    },
+    "FoodOrderArrived": {
+      "subject": "Essensbestellung angekommen: {{orderTitle}}",
+      "heading": "Deine Bestellung ist angekommen",
+      "body": "Die Bestellung \"{{orderTitle}}\" bei {{vendorName}} ist angekommen.",
+      "itemsHeading": "Deine bestellten Artikel",
+      "item": "Artikel",
+      "quantity": "Menge",
+      "status": "Status",
+      "statuses": {
+        "requested": "Angefragt",
+        "ordered": "Bestellt",
+        "completed": "Geliefert",
+        "missing": "Nicht geliefert",
+        "cancelled": "Abgebrochen"
+      },
+      "open": "Bestellung öffnen",
+      "text": "Hallo {{name}},\n\nDie Bestellung \"{{orderTitle}}\" bei {{vendorName}} ist angekommen.\n\n{{domain}}/foodorders"
+    }
+  }
+}

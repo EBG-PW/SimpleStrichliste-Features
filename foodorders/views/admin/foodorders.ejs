@@ -29,10 +29,6 @@
         </div>
       </header>
 
-      <div id="message-box-container" class="fixed bottom-5 right-5 z-50 w-full max-w-xs">
-        <div id="message-box" class="hidden mt-4 rounded-lg p-4 shadow-lg"></div>
-      </div>
-
       <section class="rounded-lg bg-white shadow">
         <div class="flex flex-col gap-3 border-b border-gray-200 p-4 md:flex-row md:items-end md:justify-between">
           <div class="grid grid-cols-1 gap-3 md:grid-cols-[260px_180px]">
@@ -96,7 +92,8 @@
         <div class="overflow-auto p-5">
           <div class="mb-4 flex flex-wrap items-center gap-3">
             <label class="text-sm font-medium text-gray-700" data-translate="FoodOrders.Status"></label>
-            <select id="detail-order-status" class="rounded-lg border border-gray-300 px-3 py-2 text-sm"></select>
+            <span id="detail-order-status" class="rounded-full bg-gray-100 px-3 py-1 text-sm font-semibold text-gray-700"></span>
+            <div id="detail-order-actions" class="flex flex-wrap gap-2"></div>
           </div>
           <div class="overflow-x-auto">
             <table class="min-w-full text-left text-sm">
@@ -121,18 +118,10 @@
     <script src="<%= domain %>/appjs/translate.js?<%= curentUnixTime %>"></script>
     <script>
       const money = new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" });
-      const orderStatuses = ["", "open", "closed", "ordered", "completed", "cancelled"];
+      const orderStatuses = ["", "open", "closed", "ordered", "arrived", "completed", "cancelled"];
       const itemStatuses = ["requested", "ordered", "completed", "missing", "cancelled"];
       let currentPage = 1;
       let currentOrder = null;
-      const messageBox = document.getElementById("message-box");
-
-      function showMessage(text, type = "success") {
-        messageBox.textContent = text;
-        messageBox.className = `mt-4 rounded-lg p-4 shadow-lg ${type === "success" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`;
-        messageBox.classList.remove("hidden");
-        setTimeout(() => messageBox.classList.add("hidden"), 4000);
-      }
 
       async function requestJson(url, options = {}) {
         const response = await apiFetch(url, options);
@@ -147,6 +136,47 @@
       function renderStatusOptions(selected, includeAll = false) {
         const statuses = includeAll ? orderStatuses : orderStatuses.filter(Boolean);
         return statuses.map((status) => `<option value="${status}" ${selected === status ? "selected" : ""}>${status ? t(`FoodOrders.Statuses.${status}`) : t("FoodOrders.Admin.AllStatuses")}</option>`).join("");
+      }
+
+      function renderOrderActions(order) {
+        const nextActions = {
+          open: [{ status: "closed", key: "CloseOrder", className: "bg-blue-600 hover:bg-blue-700" }],
+          closed: [{ status: "ordered", key: "MarkOrdered", className: "bg-blue-600 hover:bg-blue-700" }],
+          ordered: [{ status: "arrived", key: "MarkArrived", className: "bg-green-600 hover:bg-green-700" }],
+          arrived: [{ status: "completed", key: "MarkCompleted", className: "bg-green-600 hover:bg-green-700" }],
+          completed: [],
+          cancelled: [],
+        };
+        const actions = [...(nextActions[order.status] || [])];
+        if (order.status !== "cancelled") {
+          actions.push({ status: "cancelled", key: "MarkCancelled", className: "bg-red-600 hover:bg-red-700" });
+        }
+        return actions.map((action) => `
+          <button
+            type="button"
+            onclick="updateOrderStatus('${order.uuid}', '${action.status}')"
+            class="rounded-lg px-3 py-2 text-sm font-semibold text-white ${action.className}"
+          >${t(`FoodOrders.Admin.${action.key}`)}</button>
+        `).join("");
+      }
+
+      function renderOrderItemActions(item) {
+        const actionClasses = {
+          requested: "bg-gray-600 hover:bg-gray-700",
+          ordered: "bg-blue-600 hover:bg-blue-700",
+          completed: "bg-green-600 hover:bg-green-700",
+          missing: "bg-orange-600 hover:bg-orange-700",
+          cancelled: "bg-red-600 hover:bg-red-700",
+        };
+        return itemStatuses
+          .filter((status) => status !== item.status)
+          .map((status) => `
+            <button
+              type="button"
+              onclick="updateOrderItemStatus(${item.id}, '${status}')"
+              class="rounded px-2 py-1 text-xs font-semibold text-white ${actionClasses[status]}"
+            >${t(`FoodOrders.Statuses.${status}`)}</button>
+          `).join("");
       }
 
       async function loadVendorsForOrder() {
@@ -210,9 +240,8 @@
         currentOrder = data.order;
         document.getElementById("detail-title").textContent = currentOrder.title;
         document.getElementById("detail-subtitle").textContent = `${currentOrder.vendor?.name || t("FoodOrders.NoVendor")} - ${money.format(currentOrder.total)}`;
-        const orderStatus = document.getElementById("detail-order-status");
-        orderStatus.innerHTML = renderStatusOptions(currentOrder.status);
-        orderStatus.onchange = () => updateOrderStatus(currentOrder.uuid, orderStatus.value);
+        document.getElementById("detail-order-status").textContent = t(`FoodOrders.Statuses.${currentOrder.status}`);
+        document.getElementById("detail-order-actions").innerHTML = renderOrderActions(currentOrder);
         document.getElementById("detail-items").innerHTML = currentOrder.items.map((item) => `
           <tr class="border-b">
             <td class="px-3 py-2">${item.user.name}</td>
@@ -221,9 +250,8 @@
             <td class="px-3 py-2">${money.format(item.total)}</td>
             <td class="max-w-sm whitespace-pre-wrap break-words px-3 py-2">${item.note || ""}</td>
             <td class="px-3 py-2">
-              <select onchange="updateOrderItemStatus(${item.id}, this.value)" class="rounded-lg border border-gray-300 px-2 py-1 text-xs">
-                ${itemStatuses.map((status) => `<option value="${status}" ${item.status === status ? "selected" : ""}>${t(`FoodOrders.Statuses.${status}`)}</option>`).join("")}
-              </select>
+              <div class="mb-2 text-xs font-semibold text-gray-700">${t(`FoodOrders.Statuses.${item.status}`)}</div>
+              <div class="flex flex-wrap gap-1">${renderOrderItemActions(item)}</div>
               ${item.chargedAt ? `<div class="mt-1 text-xs text-green-600">${t("FoodOrders.Charged")}</div>` : ""}
             </td>
           </tr>

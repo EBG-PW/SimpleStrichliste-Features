@@ -22,10 +22,6 @@
         <p class="mt-1 text-sm text-gray-600" data-translate="FoodOrders.UserSubtitle"></p>
       </header>
 
-      <div id="message-box-container" class="fixed bottom-20 right-5 z-50 w-full max-w-xs lg:bottom-5">
-        <div id="message-box" class="hidden mt-4 rounded-lg p-4 shadow-lg"></div>
-      </div>
-
       <div class="space-y-6">
         <section id="order-selector" class="hidden rounded-xl bg-white p-5 shadow">
           <div class="mb-4 flex items-center justify-between">
@@ -101,14 +97,6 @@
       let currentOwnItems = [];
 
       const money = new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" });
-      const messageBox = document.getElementById("message-box");
-
-      function showMessage(text, type = "success") {
-        messageBox.textContent = text;
-        messageBox.className = `mt-4 rounded-lg p-4 shadow-lg ${type === "success" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`;
-        messageBox.classList.remove("hidden");
-        setTimeout(() => messageBox.classList.add("hidden"), 4000);
-      }
 
       async function requestJson(url, options = {}) {
         const response = await apiFetch(url, options);

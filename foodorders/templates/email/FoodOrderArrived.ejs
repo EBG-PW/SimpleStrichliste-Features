@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="<%= language %>">
+<body>
+    <h1><%= t('emails.FoodOrderArrived.heading') %></h1>
+    <p><%= t('emails.greeting', { name }) %></p>
+    <p><%= t('emails.FoodOrderArrived.body', { orderTitle, vendorName }) %></p>
+    <h2><%= t('emails.FoodOrderArrived.itemsHeading') %></h2>
+    <table style="width: 100%; border-collapse: collapse;">
+        <thead>
+            <tr>
+                <th style="padding: 8px; border-bottom: 1px solid #ddd; text-align: left;"><%= t('emails.FoodOrderArrived.item') %></th>
+                <th style="padding: 8px; border-bottom: 1px solid #ddd; text-align: left;"><%= t('emails.FoodOrderArrived.quantity') %></th>
+                <th style="padding: 8px; border-bottom: 1px solid #ddd; text-align: left;"><%= t('emails.FoodOrderArrived.status') %></th>
+            </tr>
+        </thead>
+        <tbody>
+            <% items.forEach((item) => { %>
+            <tr>
+                <td style="padding: 8px; border-bottom: 1px solid #eee;"><%= item.name %></td>
+                <td style="padding: 8px; border-bottom: 1px solid #eee;"><%= item.quantity %></td>
+                <td style="padding: 8px; border-bottom: 1px solid #eee;"><%= t(`emails.FoodOrderArrived.statuses.${item.status}`) %></td>
+            </tr>
+            <% }); %>
+        </tbody>
+    </table>
+    <p><a href="<%= domain %>/foodorders"><%= t('emails.FoodOrderArrived.open') %></a></p>
+</body>
+</html>

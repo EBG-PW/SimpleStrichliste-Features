@@ -1,0 +1,12 @@
+<!doctype html>
+<html lang="<%= language %>">
+<body>
+    <h1><%= t('emails.FoodOrderCreated.heading') %></h1>
+    <p><%= t('emails.greeting', { name }) %></p>
+    <p><%= t('emails.FoodOrderCreated.body', { orderTitle, vendorName }) %></p>
+    <% if (orderDeadline) { %>
+    <p><%= t('emails.FoodOrderCreated.deadline', { date: new Date(orderDeadline).toLocaleString(language) }) %></p>
+    <% } %>
+    <p><a href="<%= domain %>/foodorders"><%= t('emails.FoodOrderCreated.open') %></a></p>
+</body>
+</html>

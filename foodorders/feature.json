@@ -1,7 +1,7 @@
 {
   "name": "foodorders",
-  "version": "0.0.1",
-  "enabledByDefault": false,
+  "version": "0.0.2",
+  "minCoreVersion": "0.4.0",
   "navbar": {
     "insert": true,
     "href": "/foodorders",
@@ -11,9 +11,6 @@
   "adminCard": {
     "href": "/admin/foodorders",
     "translationKeyBase": "Admin.FeatureCards.foodorders"
-  },
-  "settings": {
-    "translationKeyBase": "AdminSettings.Features.foodorders"
   },
   "localsMap": {
     "/foodorders": [
@@ -42,11 +39,15 @@
       "Error",
       "Page",
       "Navbar"
+    ],
+    "/settings": [
+      "FoodOrders"
     ]
   },
   "db": {
     "migrations": [
-      "migrations/1780704000-CreateFoodOrders.sql"
+      "migrations/1780704000-CreateFoodOrders.sql",
+      "migrations/1782168749-AddFoodOrderArrivedStatus.sql"
     ],
     "seeds": [
       "seeds/foodorders.sql"
