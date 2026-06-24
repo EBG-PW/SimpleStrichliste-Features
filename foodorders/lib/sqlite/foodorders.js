@@ -12,6 +12,17 @@ const ORDER_ITEM_STATUS_TRANSITIONS = Object.freeze({
 const canTransitionOrderItemStatus = (currentStatus, nextStatus, chargedAt = null) =>
     !chargedAt && Boolean(ORDER_ITEM_STATUS_TRANSITIONS[currentStatus]?.includes(nextStatus));
 
+const truncateText = (value, maxLength) => String(value ?? '').slice(0, maxLength);
+
+const buildFoodOrderTransactionText = (item) => JSON.stringify({
+    feature: 'foodorders',
+    orderId: item.order_id,
+    orderUuid: item.order_uuid,
+    orderTitle: truncateText(item.order_title, 180),
+    orderItemId: item.id,
+    itemName: truncateText(item.item_name, 180),
+});
+
 const toCents = (price) => Math.round(Number(price || 0) * 100);
 const fromCents = (price) => Number((price / 100).toFixed(2));
 const isPastDeadline = (deadline) => {
@@ -464,7 +475,7 @@ const getOrderParticipants = (uuid) => {
 const updateOrderItemStatus = (id, status, adminId) => {
     const updateStatus = db.transaction((itemId, nextStatus, initiatorId) => {
         const item = db.prepare(`
-            SELECT foi.*, fo.title AS order_title, u.uuid AS user_uuid
+            SELECT foi.*, fo.title AS order_title, fo.uuid AS order_uuid, u.uuid AS user_uuid
             FROM foodorder_order_items foi
             JOIN foodorder_orders fo ON fo.id = foi.order_id
             JOIN users u ON u.id = foi.user_id
@@ -479,7 +490,7 @@ const updateOrderItemStatus = (id, status, adminId) => {
 
         let charged = false;
         if (nextStatus === 'completed') {
-            const customItemText = `${item.order_title} - ${item.item_name}`.slice(0, 500);
+            const customItemText = buildFoodOrderTransactionText(item);
             db.prepare('UPDATE users SET balance = balance - ? WHERE id = ?').run(item.price_at_order * item.quantity, item.user_id);
             db.prepare(`
                 INSERT INTO transactions (user_id, item_id, quantity, price_at_transaction, initiator_id, custom_item_text)
