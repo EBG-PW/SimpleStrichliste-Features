@@ -12,7 +12,7 @@ const router = new express.Router();
 
 const PluginName = 'FoodOrders';
 const PluginRequirements = [];
-const PluginVersion = '0.0.2';
+const PluginVersion = '0.0.3';
 
 const ORDER_STATUSES = ['open', 'closed', 'ordered', 'arrived', 'completed', 'cancelled'];
 const ORDER_ITEM_STATUSES = ['requested', 'ordered', 'completed', 'missing', 'cancelled'];
