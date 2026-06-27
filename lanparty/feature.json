@@ -1,0 +1,56 @@
+{
+  "name": "lanparty",
+  "version": "0.0.1",
+  "minCoreVersion": "0.6.0",
+  "navbar": {
+    "insert": false,
+    "href": "/admin/lanparty",
+    "translationKey": "Navbar.Lanparty",
+    "order": 80
+  },
+  "adminCard": {
+    "href": "/admin/lanparty",
+    "translationKeyBase": "Admin.FeatureCards.lanparty"
+  },
+  "localsMap": {
+    "/admin/lanparty": [
+      "Lanparty",
+      "Navbar",
+      "Page",
+      "Error"
+    ],
+    "/admin/lanparty/users": [
+      "Lanparty",
+      "Navbar",
+      "Page",
+      "Error"
+    ],
+    "/admin/lanparty/prices": [
+      "Lanparty",
+      "Navbar",
+      "Page",
+      "Error"
+    ],
+    "/admin/lanparty/payments": [
+      "Lanparty",
+      "Navbar",
+      "Page",
+      "Error"
+    ],
+    "/register": [
+      "Lanparty"
+    ],
+    "/setup": [
+      "Lanparty"
+    ],
+    "/admin/settings": [
+      "Lanparty"
+    ]
+  },
+  "db": {
+    "migrations": [
+      "migrations/1782600000-lanparty_create_user_event.sql"
+    ],
+    "seeds": []
+  }
+}

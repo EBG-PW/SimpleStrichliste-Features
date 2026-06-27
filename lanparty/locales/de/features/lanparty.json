@@ -1,0 +1,91 @@
+{
+  "Admin": {
+    "FeatureCards": {
+      "lanparty": {
+        "Title": "Event",
+        "Description": "LAN-Event Registrierung, Preise und Zahlungen",
+        "Button": "Event Einstellungen"
+      }
+    }
+  },
+  "Navbar": {
+    "Lanparty": "Event"
+  },
+  "Lanparty": {
+    "Register": {
+      "Title": "Event Anmeldung",
+      "Description": "Bitte gib an, wann du am Event teilnimmst und bestaetige Regeln und AGB.",
+      "Arrival": "Anreise",
+      "Departure": "Abreise",
+      "Rules": "Regeln",
+      "Agb": "AGB",
+      "RulesAgree": "Ich akzeptiere die Regeln",
+      "AgbAgree": "Ich akzeptiere die AGB",
+      "EstimatedPrice": "Voraussichtlicher Betrag",
+      "Days": "{{count}} Tag",
+      "Days_plural": "{{count}} Tage",
+      "PriceInfo": "{{days}} x {{perDay}} EUR = {{total}} EUR",
+      "CostDetails": "Kosten",
+      "FixedCosts": "Fixkosten",
+      "FlatCosts": "Pauschalkosten",
+      "Day": "Tag",
+      "PerDay": "Pro Tag",
+      "Duration": "Dauer",
+      "Total": "Gesamt",
+      "Back": "Zurueck",
+      "Next": "Weiter",
+      "Done": "Fertig",
+      "Ready": "Eventdaten gespeichert",
+      "Incomplete": "Bitte vervollstaendige die Event Anmeldung.",
+      "display_count": "Anzahl Displays",
+      "vr_space": "VR-Aufbauplatz benoetigt",
+      "Continue": "Mit Eventdaten registrieren",
+      "MissingAgreement": "Bitte bestaetige Regeln und AGB.",
+      "InvalidDates": "Bitte pruefe Anreise und Abreise."
+    },
+    "Admin": {
+      "Title": "Event",
+      "Description": "Verwalte LAN-Event Teilnehmer, Preise und Zahlungen.",
+      "Users": "Teilnehmer",
+      "UsersDescription": "LAN-spezifische Teilnehmerdaten ansehen.",
+      "Prices": "Preisliste",
+      "PricesDescription": "Fixkosten und Pauschalkosten pro Tag bearbeiten.",
+      "Payments": "Zahlungen",
+      "PaymentsDescription": "Offene Zahlungen mit Zahlungscode abgleichen."
+    },
+    "Users": {
+      "Title": "Event Teilnehmer",
+      "Name": "Name",
+      "Username": "Username",
+      "Email": "E-Mail",
+      "Arrival": "Anreise",
+      "Departure": "Abreise",
+      "Amount": "Betrag",
+      "Paid": "Bezahlt",
+      "PaymentToken": "Zahlungscode",
+      "Yes": "Ja",
+      "No": "Nein",
+      "Empty": "Noch keine Event-Teilnehmer vorhanden."
+    },
+    "Prices": {
+      "Title": "Event Preisliste",
+      "FixKostenProTag": "Fixkosten pro Tag",
+      "PauschalkostenProTag": "Pauschalkosten pro Tag",
+      "Name": "Name",
+      "Amount": "Betrag",
+      "Add": "Eintrag hinzufuegen",
+      "Save": "Speichern",
+      "Saved": "Preise gespeichert",
+      "Error": "Preise konnten nicht gespeichert werden"
+    },
+    "Payments": {
+      "Title": "Offene Event Zahlungen",
+      "Name": "Name",
+      "Email": "E-Mail",
+      "Amount": "Betrag",
+      "PaymentToken": "Zahlungscode",
+      "MarkPaid": "Als bezahlt markieren",
+      "Empty": "Keine offenen Zahlungen."
+    }
+  }
+}

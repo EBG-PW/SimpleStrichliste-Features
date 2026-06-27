@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="<%= language %>">
+<head>
+    <meta charset="utf-8">
+    <title><%= t('emails.LanpartyPayment.subject', { eventName }) %></title>
+</head>
+<body>
+    <p><%= t('emails.greeting', { name }) %></p>
+    <p><%= t('emails.LanpartyPayment.body', { eventName, amount: Number(amount || 0).toFixed(2), purpose: bank?.purpose || paymentToken }) %></p>
+
+    <table>
+        <tr>
+            <td><strong><%= t('emails.LanpartyPayment.event') %></strong></td>
+            <td><%= eventName %></td>
+        </tr>
+        <tr>
+            <td><strong><%= t('emails.LanpartyPayment.amount') %></strong></td>
+            <td><%= Number(amount || 0).toFixed(2) %> EUR</td>
+        </tr>
+        <% if (bank?.owner) { %>
+        <tr>
+            <td><strong><%= t('emails.LanpartyPayment.owner') %></strong></td>
+            <td><%= bank.owner %></td>
+        </tr>
+        <% } %>
+        <% if (bank?.iban) { %>
+        <tr>
+            <td><strong><%= t('emails.LanpartyPayment.iban') %></strong></td>
+            <td><%= bank.iban %></td>
+        </tr>
+        <% } %>
+        <% if (bank?.bank) { %>
+        <tr>
+            <td><strong><%= t('emails.LanpartyPayment.bank') %></strong></td>
+            <td><%= bank.bank %></td>
+        </tr>
+        <% } %>
+        <% if (bank?.purpose) { %>
+        <tr>
+            <td><strong><%= t('emails.LanpartyPayment.purpose') %></strong></td>
+            <td><%= bank.purpose %></td>
+        </tr>
+        <% } %>
+    </table>
+</body>
+</html>

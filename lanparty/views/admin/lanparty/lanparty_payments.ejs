@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title data-translate="Lanparty.Payments.Title"></title>
+    <%- html_content.manifest %>
+    <script>
+      const lang = <%- JSON.stringify(language) %>;
+      const features = <%- JSON.stringify(features) %>;
+    </script>
+    <script src="<%= domain %>/libjs/i18next.js?<%= curentUnixTime %>"></script>
+    <script src="<%= domain %>/libjs/tailwind.js?<%= curentUnixTime %>"></script>
+  </head>
+  <body class="bg-gray-100 font-sans">
+    <%- html_content.navbar %>
+    <main class="container mx-auto p-4 md:p-6">
+      <header class="mb-6 flex items-center gap-4">
+        <a href="/admin/lanparty" class="text-gray-500 hover:text-gray-800" aria-label="Go back">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+        </a>
+        <h1 class="text-2xl md:text-3xl font-bold text-gray-800" data-translate="Lanparty.Payments.Title"></h1>
+      </header>
+      <div class="overflow-x-auto rounded-lg bg-white shadow">
+        <table class="min-w-full divide-y divide-gray-200 text-sm">
+          <thead class="bg-gray-900 text-left text-xs uppercase tracking-wide text-gray-200">
+            <tr>
+              <th class="px-3 py-2" data-translate="Lanparty.Payments.Name"></th>
+              <th class="px-3 py-2" data-translate="Lanparty.Payments.Email"></th>
+              <th class="px-3 py-2" data-translate="Lanparty.Payments.Amount"></th>
+              <th class="px-3 py-2" data-translate="Lanparty.Payments.PaymentToken"></th>
+              <th class="px-3 py-2"></th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100" id="lan-payments-body"></tbody>
+        </table>
+      </div>
+      <div id="message-box-container" class="fixed bottom-5 right-5 z-50 w-full max-w-xs">
+        <div id="message-box" class="hidden mt-4 rounded-lg p-4 shadow-lg"></div>
+      </div>
+    </main>
+    <script src="<%= domain %>/appjs/permission.js?<%= curentUnixTime %>" defer></script>
+    <script src="<%= domain %>/appjs/translate.js?<%= curentUnixTime %>"></script>
+    <script>
+      const formatMoney = (value) => `${Number(value || 0).toFixed(2)} EUR`;
+      const escapeHtml = (value) => String(value ?? "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
+
+      async function markPaid(uuid) {
+        const response = await apiFetch(`/api/v1/lanparty/payments/${uuid}/paid`, { method: "POST" });
+        if (!response.ok) throw new Error("payment update failed");
+        await loadPayments();
+      }
+
+      async function loadPayments() {
+        const response = await apiFetch("/api/v1/lanparty/payments");
+        const data = await response.json();
+        const body = document.getElementById("lan-payments-body");
+        if (!data.users?.length) {
+          body.innerHTML = `<tr><td colspan="5" class="px-3 py-4 text-gray-500">${t("Lanparty.Payments.Empty")}</td></tr>`;
+          return;
+        }
+        body.innerHTML = data.users.map((user) => `<tr>
+          <td class="px-3 py-2 font-semibold">${escapeHtml(user.name)}</td>
+          <td class="px-3 py-2">${escapeHtml(user.email)}</td>
+          <td class="px-3 py-2">${formatMoney(user.amount)}</td>
+          <td class="px-3 py-2 font-mono">${escapeHtml(user.payment_token)}</td>
+          <td class="px-3 py-2 text-right">
+            <button type="button" data-uuid="${escapeHtml(user.uuid)}" class="rounded-md bg-green-600 px-3 py-2 text-sm font-semibold text-white hover:bg-green-700">${t("Lanparty.Payments.MarkPaid")}</button>
+          </td>
+        </tr>`).join("");
+        body.querySelectorAll("[data-uuid]").forEach((button) => {
+          button.addEventListener("click", () => markPaid(button.dataset.uuid).catch(() => showMessage("Error", "error")));
+        });
+      }
+
+      document.addEventListener("DOMContentLoaded", () => {
+        loadPayments().catch(() => showMessage("Error", "error"));
+      });
+    </script>
+  </body>
+</html>

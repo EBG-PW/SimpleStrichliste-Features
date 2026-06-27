@@ -1,0 +1,54 @@
+{
+  "EventName": "SommerLAN",
+  "EventStartDate": "2026-07-01",
+  "EventEndDate": "2026-07-12",
+  "ZVR": "123456789",
+  "Veranstalter": "Beispiel",
+  "Street": "sdaer 1",
+  "PLZORT": "1234 Musterhausen",
+  "Country": "Österreich",
+  "WebTokenLength": 64,
+  "KontoInhaber": "Beispiel",
+  "KontoIban": "AT693456000003633823",
+  "KontoBank": "Raiffeisenbank OOE",
+  "Verwendungszweck": "Lan",
+  "rules": [
+    "Respektvoller Umgang mit allen Teilnehmern.",
+    "Keine illegalen Downloads oder Netzwerkmissbrauch.",
+    "Eigene Hardware muss sicher betrieben werden."
+  ],
+  "agb": [
+    "Die Teilnahme erfolgt auf eigene Verantwortung.",
+    "Der Veranstalter kann Teilnehmer bei Regelverstoessen ausschliessen."
+  ],
+  "fields": [
+    {
+      "key": "display_count",
+      "type": "number",
+      "label": "Anzahl Displays",
+      "required": true,
+      "min": 1,
+      "max": 8,
+      "default": 1
+    },
+    {
+      "key": "vr_space",
+      "type": "bool",
+      "label": "VR-Aufbauplatz benoetigt",
+      "required": false,
+      "default": false
+    }
+  ],
+  "FixKostenProTag": [
+    {
+      "name": "Raummiete",
+      "amount": 10
+    }
+  ],
+  "PauschalkostenProTag": [
+    {
+      "name": "Strom und Netzwerk",
+      "amount": 5
+    }
+  ]
+}
