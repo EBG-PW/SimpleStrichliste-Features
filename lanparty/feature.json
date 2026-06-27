@@ -1,7 +1,10 @@
 {
   "name": "lanparty",
-  "version": "0.0.1",
-  "minCoreVersion": "0.6.0",
+  "version": "0.0.2",
+  "minCoreVersion": "0.6.1",
+  "preserveFiles": [
+    "config/lanparty.json"
+  ],
   "navbar": {
     "insert": false,
     "href": "/admin/lanparty",

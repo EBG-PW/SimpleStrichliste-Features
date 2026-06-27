@@ -8,6 +8,7 @@
     estimate: null,
     showRegCode: false,
     setupMode: false,
+    oauthMode: false,
     account: {
       name: "",
       email: "",
@@ -25,7 +26,7 @@
     },
   };
 
-  const stages = ["account", "dates", "agreements", "questions"];
+  const getStages = () => state.oauthMode ? ["dates", "agreements", "questions"] : ["account", "dates", "agreements", "questions"];
 
   const translate = (key, options) => {
     if (typeof i18next !== "undefined") return i18next.t(key, options);
@@ -249,14 +250,16 @@
   const renderQuestionsStage = () => `<div class="space-y-3">${(state.config.fields || []).map(renderField).join("")}</div>`;
 
   const renderStageBody = () => {
-    if (state.stage === 0) return renderAccountStage();
-    if (state.stage === 1) return renderDatesStage();
-    if (state.stage === 2) return renderAgreementsStage();
+    const stageName = getStages()[state.stage];
+    if (stageName === "account") return renderAccountStage();
+    if (stageName === "dates") return renderDatesStage();
+    if (stageName === "agreements") return renderAgreementsStage();
     return renderQuestionsStage();
   };
 
   const render = () => {
-    const titleKey = state.stage === 0
+    const stageName = getStages()[state.stage];
+    const titleKey = stageName === "account"
       ? (state.setupMode ? "Setup.Welcome" : "Setup.WelcomeUser")
       : "Lanparty.Register.Title";
     state.root.innerHTML = `
@@ -267,7 +270,7 @@
         ${renderStageBody()}
         <div class="mt-6 flex justify-between gap-3">
           <button type="button" data-lanparty-back class="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 ${state.stage === 0 ? "invisible" : ""}">${escapeHtml(translate("Lanparty.Register.Back"))}</button>
-          <button type="button" data-lanparty-next class="rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">${escapeHtml(state.stage === stages.length - 1 ? translate("Setup.Form.Submit") : translate("Lanparty.Register.Next"))}</button>
+          <button type="button" data-lanparty-next class="rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">${escapeHtml(state.stage === getStages().length - 1 ? translate("Setup.Form.Submit") : translate("Lanparty.Register.Next"))}</button>
         </div>
       </div>`;
 
@@ -283,7 +286,7 @@
         fetchEstimate();
       });
     });
-    if (state.stage === 1) fetchEstimate();
+    if (stageName === "dates") fetchEstimate();
   };
 
   const validateAccount = () => {
@@ -302,9 +305,10 @@
 
   const validateCurrentStage = async () => {
     saveCurrentStage();
-    if (state.stage === 0) return validateAccount();
-    if (state.stage === 1) return fetchEstimate();
-    if (state.stage === 2) {
+    const stageName = getStages()[state.stage];
+    if (stageName === "account") return validateAccount();
+    if (stageName === "dates") return fetchEstimate();
+    if (stageName === "agreements") {
       const valid = state.event.rules_agree && state.event.agb_agree;
       if (!valid && typeof showMessage === "function") showMessage(translate("Lanparty.Register.MissingAgreement"), "error");
       return valid;
@@ -318,11 +322,13 @@
   };
 
   const buildRegistrationPayload = () => ({
-    name: state.account.name,
-    email: state.account.email,
-    username: state.account.username,
-    password: state.account.password,
-    reg_code: state.account.reg_code,
+    ...(state.oauthMode ? {} : {
+      name: state.account.name,
+      email: state.account.email,
+      username: state.account.username,
+      password: state.account.password,
+      reg_code: state.account.reg_code,
+    }),
     features: {
       lanparty: {
         arrival_date: state.event.arrival_date,
@@ -349,7 +355,7 @@
 
   const nextStage = async () => {
     if (!await validateCurrentStage()) return;
-    if (state.stage < stages.length - 1) {
+    if (state.stage < getStages().length - 1) {
       state.stage += 1;
       render();
       return;
@@ -357,13 +363,15 @@
     await submit();
   };
 
-  const mountStandalone = async ({ container, regCode, submitRegistration, setupMode = false }) => {
+  const mountStandalone = async ({ container, regCode, submitRegistration, setupMode = false, oauthMode = false }) => {
     const response = await fetch("/api/v1/lanparty/config");
     state.config = await response.json();
     state.root = container;
     state.submitRegistration = submitRegistration;
     state.account.reg_code = regCode || "";
     state.setupMode = setupMode;
+    state.oauthMode = oauthMode;
+    state.stage = 0;
     container.parentElement.className = "w-full max-w-lg";
     render();
   };

@@ -6,9 +6,9 @@ const { db } = require('@lib/sqlite');
 const { getMessageRecipientUsers } = require('@lib/sqlite/users');
 
 const appRoot = process.cwd();
-const generatedConfigPath = path.join(appRoot, 'config', 'lanparty.json');
-const copiedDefaultConfigPath = path.join(appRoot, 'config', 'lanparty.default.json');
-const sourceDefaultConfigPath = path.join(__dirname, '..', 'config', 'lanparty.default.json');
+const featureConfigPath = path.join(appRoot, 'config', 'lanparty.json');
+const legacyDefaultConfigPath = path.join(appRoot, 'config', 'lanparty.default.json');
+const sourceConfigPath = path.join(__dirname, '..', 'config', 'lanparty.json');
 const datePattern = /^\d{4}-\d{2}-\d{2}$/;
 const paymentTokenAlphabet = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 const paymentTokenLength = 12;
@@ -19,44 +19,26 @@ const normalizeMoney = (value) => {
     return Number.isFinite(number) ? Math.max(0, number) : 0;
 };
 
-const ensureGeneratedConfigFile = () => {
-    if (fs.existsSync(generatedConfigPath)) return;
-
-    const defaultConfigPath = fs.existsSync(copiedDefaultConfigPath)
-        ? copiedDefaultConfigPath
-        : sourceDefaultConfigPath;
-    fs.mkdirSync(path.dirname(generatedConfigPath), { recursive: true });
-    fs.copyFileSync(defaultConfigPath, generatedConfigPath);
+const cleanupLegacyDefaultConfigFile = () => {
+    if (!fs.existsSync(legacyDefaultConfigPath)) return;
+    fs.unlinkSync(legacyDefaultConfigPath);
 };
 
-const readDefaultConfigFile = () => {
-    const defaultConfigPath = fs.existsSync(copiedDefaultConfigPath)
-        ? copiedDefaultConfigPath
-        : sourceDefaultConfigPath;
-    return JSON.parse(fs.readFileSync(defaultConfigPath, 'utf8'));
-};
-
-const mergeMissingDefaultConfig = (config) => {
-    const defaultConfig = readDefaultConfigFile();
-    let changed = false;
-
-    Object.entries(defaultConfig).forEach(([key, value]) => {
-        if (config[key] !== undefined) return;
-        config[key] = value;
-        changed = true;
-    });
-
-    if (changed) writeFeatureConfigFile(config);
-    return config;
+const getReadableConfigPath = () => {
+    if (fs.existsSync(featureConfigPath)) return featureConfigPath;
+    if (fs.existsSync(sourceConfigPath)) return sourceConfigPath;
+    throw new Error('Missing lanparty config file: config/lanparty.json');
 };
 
 const readFeatureConfigFile = () => {
-    ensureGeneratedConfigFile();
-    return mergeMissingDefaultConfig(JSON.parse(fs.readFileSync(generatedConfigPath, 'utf8')));
+    cleanupLegacyDefaultConfigFile();
+    return JSON.parse(fs.readFileSync(getReadableConfigPath(), 'utf8'));
 };
 
 const writeFeatureConfigFile = (config) => {
-    fs.writeFileSync(generatedConfigPath, `${JSON.stringify(config, null, 2)}\n`, 'utf8');
+    cleanupLegacyDefaultConfigFile();
+    fs.mkdirSync(path.dirname(featureConfigPath), { recursive: true });
+    fs.writeFileSync(featureConfigPath, `${JSON.stringify(config, null, 2)}\n`, 'utf8');
 };
 
 const getLanpartyFeatureConfig = () => readFeatureConfigFile();

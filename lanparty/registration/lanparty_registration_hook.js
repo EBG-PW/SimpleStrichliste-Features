@@ -2,6 +2,7 @@ const {
     getEventConfig,
     getConfiguredFields,
     getEventAmount,
+    getUserEventByUserId,
     registerUserEvent,
 } = require('../lib/lanparty_service');
 
@@ -45,6 +46,8 @@ const getLanpartyPaymentMessage = (eventRegistration) => {
 };
 
 const afterUserCreated = async ({ userId, data, sendNotification, NOTIFICATION_TYPES }) => {
+    if (getUserEventByUserId(userId)) return;
+
     const eventRegistration = registerUserEvent(userId, data);
     await sendNotification(
         userId,
