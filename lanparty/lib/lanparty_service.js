@@ -45,7 +45,13 @@ const getLanpartyFeatureConfig = () => readFeatureConfigFile();
 
 const getEventConfig = () => getLanpartyFeatureConfig();
 
-const getConfiguredFields = () => Array.isArray(getEventConfig().fields) ? getEventConfig().fields : [];
+const getConfiguredFields = () => {
+    const fields = Array.isArray(getEventConfig().fields) ? getEventConfig().fields : [];
+    return fields.map((field) => ({
+        ...field,
+        labelKey: field.labelKey || (field.key ? `Lanparty.Fields.${field.key}` : null),
+    }));
+};
 
 const getPriceItems = () => {
     const event = getEventConfig();

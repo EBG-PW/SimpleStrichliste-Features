@@ -41,6 +41,21 @@
             <td><%= bank.purpose %></td>
         </tr>
         <% } %>
+        <% if (Array.isArray(fields) && fields.length > 0) { %>
+            <% fields.forEach((field) => {
+                const translatedLabel = field.labelKey ? t(field.labelKey) : '';
+                const label = field.labels?.[language] || field.labels?.[String(language || '').split('-')[0]] || (translatedLabel && translatedLabel !== field.labelKey ? translatedLabel : '') || field.label || field.key;
+                const value = extraData?.[field.key];
+                const displayValue = field.type === 'bool'
+                    ? t(value ? 'emails.LanpartyPayment.yes' : 'emails.LanpartyPayment.no')
+                    : value;
+            %>
+        <tr>
+            <td><strong><%= label %></strong></td>
+            <td><%= displayValue ?? '' %></td>
+        </tr>
+            <% }) %>
+        <% } %>
     </table>
 </body>
 </html>

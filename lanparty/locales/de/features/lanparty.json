@@ -12,6 +12,10 @@
     "Lanparty": "Event"
   },
   "Lanparty": {
+    "Fields": {
+      "display_count": "Anzahl Displays",
+      "vr_space": "VR-Aufbauplatz benoetigt"
+    },
     "Register": {
       "Title": "Event Anmeldung",
       "Description": "Bitte gib an, wann du am Event teilnimmst und bestaetige Regeln und AGB.",
@@ -37,8 +41,6 @@
       "Done": "Fertig",
       "Ready": "Eventdaten gespeichert",
       "Incomplete": "Bitte vervollstaendige die Event Anmeldung.",
-      "display_count": "Anzahl Displays",
-      "vr_space": "VR-Aufbauplatz benoetigt",
       "Continue": "Mit Eventdaten registrieren",
       "MissingAgreement": "Bitte bestaetige Regeln und AGB.",
       "InvalidDates": "Bitte pruefe Anreise und Abreise."

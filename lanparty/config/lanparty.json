@@ -24,18 +24,26 @@
     {
       "key": "display_count",
       "type": "number",
-      "label": "Anzahl Displays",
       "required": true,
       "min": 1,
       "max": 8,
-      "default": 1
+      "default": 1,
+      "labelKey": "Lanparty.Fields.display_count",
+      "labels": {
+        "de": "Anzahl Displays",
+        "en": "Number of displays"
+      }
     },
     {
       "key": "vr_space",
       "type": "bool",
-      "label": "VR-Aufbauplatz benoetigt",
       "required": false,
-      "default": false
+      "default": false,
+      "labelKey": "Lanparty.Fields.vr_space",
+      "labels": {
+        "de": "VR-Aufbauplatz benötigt",
+        "en": "VR setup space required"
+      }
     }
   ],
   "FixKostenProTag": [

@@ -35,6 +35,24 @@
     <script>
       const formatMoney = (value) => `${Number(value || 0).toFixed(2)} EUR`;
       const escapeHtml = (value) => String(value ?? "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
+      const translateOptional = (key) => {
+        if (!key) return "";
+        if (typeof i18next !== "undefined" && typeof i18next.exists === "function" && i18next.exists(key)) return t(key);
+        const value = t(key);
+        return value === key ? "" : value;
+      };
+      const getFieldLabel = (field) => {
+        const language = (typeof i18next !== "undefined" && (i18next.resolvedLanguage || i18next.language)) || lang || "de";
+        return field.labels?.[language]
+          || field.labels?.[String(language).split("-")[0]]
+          || translateOptional(field.labelKey)
+          || field.label
+          || field.key;
+      };
+      const formatFieldValue = (field, value) => {
+        if (field.type === "bool") return value ? t("Lanparty.Users.Yes") : t("Lanparty.Users.No");
+        return value;
+      };
       document.addEventListener("DOMContentLoaded", async () => {
         const response = await apiFetch("/api/v1/lanparty/users");
         const data = await response.json();
@@ -44,7 +62,7 @@
           <th class="px-3 py-2">${t("Lanparty.Users.Name")}</th>
           <th class="px-3 py-2">${t("Lanparty.Users.Arrival")}</th>
           <th class="px-3 py-2">${t("Lanparty.Users.Departure")}</th>
-          ${fields.map((field) => `<th class="px-3 py-2">${escapeHtml(field.label || field.key)}</th>`).join("")}
+          ${fields.map((field) => `<th class="px-3 py-2">${escapeHtml(getFieldLabel(field))}</th>`).join("")}
           <th class="px-3 py-2">${t("Lanparty.Users.Amount")}</th>
         </tr>`;
         const body = document.getElementById("lan-users-body");
@@ -56,7 +74,7 @@
           <td class="px-3 py-2 font-semibold">${escapeHtml(user.name)}</td>
           <td class="px-3 py-2">${escapeHtml(user.arrival_date)}</td>
           <td class="px-3 py-2">${escapeHtml(user.departure_date)}</td>
-          ${fields.map((field) => `<td class="px-3 py-2">${escapeHtml(user.extra_data?.[field.key])}</td>`).join("")}
+          ${fields.map((field) => `<td class="px-3 py-2">${escapeHtml(formatFieldValue(field, user.extra_data?.[field.key]))}</td>`).join("")}
           <td class="px-3 py-2">${formatMoney(user.amount)}</td>
         </tr>`).join("");
       });

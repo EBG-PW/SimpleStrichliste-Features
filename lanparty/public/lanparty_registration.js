@@ -33,6 +33,30 @@
     return key;
   };
 
+  const getLanguage = () => {
+    if (typeof i18next !== "undefined") return i18next.resolvedLanguage || i18next.language || lang || "de";
+    if (typeof lang !== "undefined") return lang;
+    return "de";
+  };
+
+  const translateOptional = (key, options) => {
+    if (!key) return "";
+    if (typeof i18next !== "undefined" && typeof i18next.exists === "function" && i18next.exists(key)) {
+      return i18next.t(key, options);
+    }
+    const value = translate(key, options);
+    return value === key ? "" : value;
+  };
+
+  const getFieldLabel = (field) => {
+    const language = getLanguage();
+    return field.labels?.[language]
+      || field.labels?.[String(language).split("-")[0]]
+      || translateOptional(field.labelKey)
+      || field.label
+      || field.key;
+  };
+
   const escapeHtml = (value) => String(value ?? "")
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
@@ -109,7 +133,7 @@
   };
 
   const renderField = (field) => {
-    const label = escapeHtml(field.label || translate(`Lanparty.Register.${field.key}`) || field.key);
+    const label = escapeHtml(getFieldLabel(field));
     const value = state.event.extra_data?.[field.key] ?? field.default ?? "";
     if (field.type === "bool") {
       return `<label class="flex items-center gap-2 text-sm text-gray-700">
